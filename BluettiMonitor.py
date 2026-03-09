@@ -158,7 +158,7 @@ class BluettiMonitorService:
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", "")) + power
-                        self.bluetti.power = power + (power/100) (add parasite power consumpiton)
+                        self.bluetti.power = power + (power/100) #add parasite power consumpiton
                     
                     if "FieldName.AC_INPUT_POWER" in line:
                         in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
