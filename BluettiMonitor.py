@@ -130,6 +130,8 @@ class BluettiMonitorService:
                                 capture_output=True, text=True)
 
 
+                in_power_dc = None
+                in_voltage_dc = None
                 lines = output.stdout.splitlines();                 
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
@@ -152,7 +154,17 @@ class BluettiMonitorService:
                         logging.debug("* * * POWER %s", power)
                         self._dbusservice["/Dc/0/Power"] = power
 
+
+                    if "FieldName.DC_INPUT_POWER" in line:
+                        in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
+                    if "FieldName.DC_INPUT_VOLTAGE" in line: 
+                        in_voltage_dc = int(line.split(":")[1].strip().replace("V", ""))
+
+            
+
                 self.bluetti.last_update = datetime.now()
+                if in_power_dc and in_voltage_dc:
+                    self._dbusservice["/Dc/0/Current"] = in_power_dc / in_voltage_dc
             else:
                 logging.debug("* * * Skip Interval")
 
