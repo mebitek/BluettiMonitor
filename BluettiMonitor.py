@@ -169,7 +169,7 @@ class BluettiMonitorService:
 
                 if self.bluetti.power > 0:
                     current = self.bluetti.power / 12.8
-                    self._dbusservice["/Dc/0/Current"] = current
+                    self._dbusservice["/Dc/0/Current"] = -current
                     self.bluetti.current = current
 
 
