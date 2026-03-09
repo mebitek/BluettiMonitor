@@ -33,7 +33,6 @@ from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
 
 from bluetti_config import BluettiConfig
-from vreg_link_item import VregLinkItem, InverterReg, GenericReg
 
 
 class Bluetti:
