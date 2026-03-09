@@ -202,20 +202,20 @@ class BluettiMonitorService:
                 self.bluetti.last_update = datetime.now()
 
                 self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
-
-                if self.bluetti.power > 0:
-                    current = self.bluetti.power / self.bluetti.voltage
-                    self._dbusservice["/Dc/0/Current"] = -current
-                    self.bluetti.current = current
-
                 current = 0
+                if self.bluetti.power > 0:
+                    current = -(self.bluetti.power / self.bluetti.voltage)
+
+
                 if in_power_dc and in_voltage_dc:
-                    current = (in_power_dc / in_voltage_dc) - self.bluetti.current
+                    current = (in_power_dc / in_voltage_dc) + current
 
                 if in_power_ac:
                     current = current + (in_power_ac/14.6)
                 
                 self._dbusservice["/Dc/0/Current"] = current
+                self.bluetti.current = current
+
 
             else:
                 logging.debug("* * * Skip Interval")
