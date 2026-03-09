@@ -131,6 +131,7 @@ class BluettiMonitorService:
 
 
                 in_power_dc = None
+                in_power_ac = None 
                 in_voltage_dc = None
                 soc = 12.8
                 lines = output.stdout.splitlines();       
@@ -161,9 +162,12 @@ class BluettiMonitorService:
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", ""))
-                        logging.debug("* * * POWER %s", power)
+                        logging.debug("* * * DC POWER %s", power)
                         self._dbusservice["/Dc/0/Power"] = -power
                         self.bluetti.power = power
+                    
+                    if "FieldName.AC_INPUT_POWER" in line:
+                        in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
 
                     if "FieldName.DC_INPUT_POWER" in line:
                         in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
@@ -204,9 +208,15 @@ class BluettiMonitorService:
                     self._dbusservice["/Dc/0/Current"] = -current
                     self.bluetti.current = current
 
-
+                current = 0
                 if in_power_dc and in_voltage_dc:
-                    self._dbusservice["/Dc/0/Current"] = (in_power_dc / in_voltage_dc) - self.bluetti.current
+                    current = (in_power_dc / in_voltage_dc) - self.bluetti.current
+
+                if in_power_ac:
+                    current = current + (in_power_ac/14.6)
+                
+                self._dbusservice["/Dc/0/Current"] = power
+
             else:
                 logging.debug("* * * Skip Interval")
 
