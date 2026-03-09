@@ -132,7 +132,7 @@ class BluettiMonitorService:
                 in_power_dc = None
                 in_power_ac = None 
                 in_voltage_dc = None
-                power = 3.6 # round standy consumpiton
+                power = config.get_standby_current() # round standy consumpiton
                 soc = 100
                 lines = output.stdout.splitlines();       
 
@@ -158,7 +158,7 @@ class BluettiMonitorService:
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", "")) + power
-                        self.bluetti.power = power + (power/100)
+                        self.bluetti.power = power + (power/100) (add parasite power consumpiton)
                     
                     if "FieldName.AC_INPUT_POWER" in line:
                         in_power_ac = int(line.split(":")[1].strip().replace("W", ""))

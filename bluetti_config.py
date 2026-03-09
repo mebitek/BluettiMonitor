@@ -32,6 +32,9 @@ class BluettiConfig:
     def get_interval(self):
         return int(self.config.get("Setup", "Interval", fallback=10))
 
+    def get_standby_current(self):
+        return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
+
 
     def get_debug(self):
         val = self.config.get("Setup", "debug", fallback=False)
