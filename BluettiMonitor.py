@@ -133,7 +133,7 @@ class BluettiMonitorService:
                 in_power_dc = None
                 in_voltage_dc = None
                 lines = output.stdout.splitlines();       
-                self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage          
+                        
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
@@ -144,19 +144,23 @@ class BluettiMonitorService:
                         if soc < 20:
                             logging.debug("* * * Set turbo mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
+                            self.bluetti.voltage  = 12.8
                         elif soc > 80:
                             logging.debug("* * * Set silent mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
+                            self.bluetti.voltage = 13.5
+
                         else:
                             logging.debug("* * * Set normal mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
+                            self.bluetti.voltage = 13.2
+
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", ""))
                         logging.debug("* * * POWER %s", power)
                         self._dbusservice["/Dc/0/Power"] = -power
                         self.bluetti.power = power
-
 
                     if "FieldName.DC_INPUT_POWER" in line:
                         in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
@@ -166,6 +170,8 @@ class BluettiMonitorService:
             
 
                 self.bluetti.last_update = datetime.now()
+
+                self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
 
                 if self.bluetti.power > 0:
                     current = self.bluetti.power / 12.8
