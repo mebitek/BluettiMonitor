@@ -127,27 +127,27 @@ class BluettiMonitorService:
             logging.debug("* * * MAC %s", self.bluetti.mac)
             logging.debug("* * * TYPE %s", self.bluetti.type)
 
-            #if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
-            #        minutes=self.config.get_interval()):
+            if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
+                    minutes=self.config.get_interval()):
 
-            output = subprocess.run(['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
-                            capture_output=True, text=True)
+                output = subprocess.run(['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
+                                capture_output=True, text=True)
 
 
-            lines = output.stdout.splitlines();                 
-            for line in lines:
-                if "FieldName.BATTERY_SOC" in line:
-                    soc = int(line.split(":")[1].strip().replace("%", ""))
-                    logging.debug("* * * BATTERY SOC %s", soc)
-                    self._dbusservice["/Soc"] = soc
-                if "FieldName.DC_OUTPUT_POWER" in line:
-                    power = int(line.split(":")[1].strip().replace("W", ""))
-                    logging.debug("* * * POWER %s", power)
-                    self._dbusservice["/Dc/0/Power"] = power
+                lines = output.stdout.splitlines();                 
+                for line in lines:
+                    if "FieldName.BATTERY_SOC" in line:
+                        soc = int(line.split(":")[1].strip().replace("%", ""))
+                        logging.debug("* * * BATTERY SOC %s", soc)
+                        self._dbusservice["/Soc"] = soc
+                    if "FieldName.DC_OUTPUT_POWER" in line:
+                        power = int(line.split(":")[1].strip().replace("W", ""))
+                        logging.debug("* * * POWER %s", power)
+                        self._dbusservice["/Dc/0/Power"] = power
 
-            self.bluetti.last_update = datetime.now()
-            #else:
-            #    logging.debug("* * * Skip Interval")
+                self.bluetti.last_update = datetime.now()
+            else:
+                logging.debug("* * * Skip Interval")
 
            
         except Exception:
