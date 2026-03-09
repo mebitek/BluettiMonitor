@@ -72,6 +72,8 @@ class BluettiMonitorService:
     ):
 
         self.config = config or BluettiConfig()
+        logging.debug("* * * MAC %s", self.bluetti.mac)
+        logging.debug("* * * TYPE %s", self.bluetti.type)
 
         # bluetti class
         self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 12.8, 0, 0, 0)
@@ -120,9 +122,6 @@ class BluettiMonitorService:
 
         try:
 
-            logging.debug("* * * MAC %s", self.bluetti.mac)
-            logging.debug("* * * TYPE %s", self.bluetti.type)
-
             if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
                     minutes=self.config.get_interval()):
 
@@ -141,7 +140,7 @@ class BluettiMonitorService:
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
-                        logging.debug("* * * BATTERY SOC %s", soc)
+                        
                         self._dbusservice["/Soc"] = soc
                         self.bluetti.soc = soc
 
@@ -159,7 +158,6 @@ class BluettiMonitorService:
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", "")) + power
-                        logging.debug("* * * DC POWER %s", power)
                         self.bluetti.power = power
                     
                     if "FieldName.AC_INPUT_POWER" in line:
@@ -212,6 +210,11 @@ class BluettiMonitorService:
                 
                 self._dbusservice["/Dc/0/Current"] = current
                 self.bluetti.current = current
+
+                logging.debug("* * * BATTERY SOC %s", soc)
+                logging.debug("* * * BATTERY VOLTAGE %s", self.bluetti.voltage)
+                logging.debug("* * * CURRENT %s", self.bluetti.current)
+                logging.debug("* * * DC POWER %s", power)
 
 
             else:
