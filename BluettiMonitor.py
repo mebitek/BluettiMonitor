@@ -15,7 +15,6 @@ Reading information from Tasmota SENSOR MQTT and puts the info on dbus as invert
 
 """
 
-import utils
 import os
 import sys
 import json
