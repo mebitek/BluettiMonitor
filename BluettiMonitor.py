@@ -132,7 +132,9 @@ class BluettiMonitorService:
 
                 in_power_dc = None
                 in_voltage_dc = None
+                soc = None
                 lines = output.stdout.splitlines();       
+
                         
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
@@ -156,6 +158,7 @@ class BluettiMonitorService:
                             self.bluetti.voltage = 13.2
 
 
+
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", ""))
                         logging.debug("* * * POWER %s", power)
@@ -168,6 +171,29 @@ class BluettiMonitorService:
                         in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
 
             
+                if soc == 100:
+                    self.bluetti.voltage = 13.6
+                elif soc == 99:
+                    self.bluetti.voltage = 13.4
+                elif soc > 90 and soc < 99:
+                    self.bluetti.voltage = 13.3
+                elif soc > 70 and soc < 90:
+                    self.bluetti.voltage = 13.2
+                elif soc > 40 and soc < 70:
+                    self.bluetti.voltage = 13.1
+                elif soc > 30 and soc < 40:
+                    self.bluetti.voltage = 13.0
+                elif soc > 20 and soc < 30:
+                    self.bluetti.voltage = 12.9
+                elif soc > 17 and soc < 20:
+                    self.bluetti.voltage = 12.8
+                elif soc > 14 and soc < 17:
+                    self.bluetti.voltage = 12.5
+                elif soc > 9 and soc < 14:
+                    self.bluetti.voltage = 12.0
+                elif soc > 0 and soc < 9:
+                    self.bluetti.voltage = 10.0
+
 
                 self.bluetti.last_update = datetime.now()
 
