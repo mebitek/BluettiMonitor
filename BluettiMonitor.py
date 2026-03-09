@@ -74,7 +74,7 @@ class BluettiMonitorService:
         self.config = config or BluettiConfig()
 
         # bluetti class
-        self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 0, 0, 0, 0)
+        self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 12.8, 0, 0, 0)
 
         # dbus service
         self._dbusservice = VeDbusService(servicename, register=False)
