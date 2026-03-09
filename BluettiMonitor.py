@@ -72,11 +72,11 @@ class BluettiMonitorService:
     ):
 
         self.config = config or BluettiConfig()
-        logging.debug("* * * MAC %s", self.bluetti.mac)
-        logging.debug("* * * TYPE %s", self.bluetti.type)
 
         # bluetti class
         self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 12.8, 0, 0, 0)
+        logging.debug("* * * MAC %s", self.bluetti.mac)
+        logging.debug("* * * TYPE %s", self.bluetti.type)
 
         # dbus service
         self._dbusservice = VeDbusService(servicename, register=False)
