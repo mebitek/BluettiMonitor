@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 
 """
-Created by mebitek in 2025.
+Created by mebitek in 2026.
 
 Inspired by:
- - https://github.com/Waldmensch1/venus.dbus-tasmota-inverter (base code)
- - https://github.com/Marv2190/venus.dbus-MqttToGridMeter (Inspiration)
  - https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py (Template)
 
 
-This code and its documentation can be found on: https://github.com/mebitek/TasmotaInverter
+This code and its documentation can be found on: https://github.com/mebitek/BluettiMonitor
 Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py as basis for this service.
 Reading information from Tasmota SENSOR MQTT and puts the info on dbus as inverter.
 
@@ -138,6 +136,14 @@ class BluettiMonitorService:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
                         logging.debug("* * * BATTERY SOC %s", soc)
                         self._dbusservice["/Soc"] = soc
+
+                        if soc < 20:
+                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
+                        elif soc > 80:
+                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
+                        else:
+                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
+
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", ""))
                         logging.debug("* * * POWER %s", power)
