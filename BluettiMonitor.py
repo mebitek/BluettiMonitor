@@ -215,7 +215,7 @@ class BluettiMonitorService:
                 if in_power_ac:
                     current = current + (in_power_ac/14.6)
                 
-                self._dbusservice["/Dc/0/Current"] = power
+                self._dbusservice["/Dc/0/Current"] = current
 
             else:
                 logging.debug("* * * Skip Interval")
