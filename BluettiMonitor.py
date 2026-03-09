@@ -154,7 +154,7 @@ class BluettiMonitorService:
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         power = int(line.split(":")[1].strip().replace("W", ""))
                         logging.debug("* * * POWER %s", power)
-                        self._dbusservice["/Dc/0/Power"] = power
+                        self._dbusservice["/Dc/0/Power"] = -power
                         self.bluetti.power = power
 
 
