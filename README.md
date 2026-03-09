@@ -11,8 +11,11 @@ you need to install via pip the `bluetti-bt-lib`
 
 * #### Manual
     see `config.ini` and amend for your needs.
-    - `device`: your charger device dbus name
-    - `voltage`: your grid voltage - defautl 230v
+    - `mac`: bluetooth mac address
+    - `type`: bluetti device
+    - `serial`: device serial 
+    - `interval`: itnerval to query the bluetti
+
     - `debug`: set log level to debug
 
 ### Installation
