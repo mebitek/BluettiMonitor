@@ -138,10 +138,13 @@ class BluettiMonitorService:
                         self._dbusservice["/Soc"] = soc
 
                         if soc < 20:
+                            logging.debug("* * * Set turbo mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
                         elif soc > 80:
+                            logging.debug("* * * Set silent mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
                         else:
+                            logging.debug("* * * Set normal mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
