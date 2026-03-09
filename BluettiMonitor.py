@@ -133,7 +133,8 @@ class BluettiMonitorService:
                 in_power_dc = None
                 in_power_ac = None 
                 in_voltage_dc = None
-                soc = 12.8
+                power = 1
+                soc = 100
                 lines = output.stdout.splitlines();       
 
                         
@@ -147,23 +148,18 @@ class BluettiMonitorService:
                         if soc < 20:
                             logging.debug("* * * Set turbo mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
-                            self.bluetti.voltage  = 12.8
                         elif soc > 80:
                             logging.debug("* * * Set silent mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
-                            self.bluetti.voltage = 13.5
 
                         else:
                             logging.debug("* * * Set normal mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
-                            self.bluetti.voltage = 13.2
-
 
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
-                        power = int(line.split(":")[1].strip().replace("W", ""))
+                        power = int(line.split(":")[1].strip().replace("W", "")) + power
                         logging.debug("* * * DC POWER %s", power)
-                        self._dbusservice["/Dc/0/Power"] = -power
                         self.bluetti.power = power
                     
                     if "FieldName.AC_INPUT_POWER" in line:
@@ -204,6 +200,7 @@ class BluettiMonitorService:
                 self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
                 current = 0
                 if self.bluetti.power > 0:
+                    self._dbusservice["/Dc/0/Power"] = -power
                     current = -(self.bluetti.power / self.bluetti.voltage)
 
 
