@@ -132,7 +132,7 @@ class BluettiMonitorService:
 
                 in_power_dc = None
                 in_voltage_dc = None
-                soc = None
+                soc = 12.8
                 lines = output.stdout.splitlines();       
 
                         
@@ -200,7 +200,7 @@ class BluettiMonitorService:
                 self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
 
                 if self.bluetti.power > 0:
-                    current = self.bluetti.power / 12.8
+                    current = self.bluetti.power / self.bluetti.voltage
                     self._dbusservice["/Dc/0/Current"] = -current
                     self.bluetti.current = current
 
