@@ -158,7 +158,7 @@ class BluettiMonitorService:
                     if "FieldName.DC_INPUT_POWER" in line:
                         in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
                     if "FieldName.DC_INPUT_VOLTAGE" in line: 
-                        in_voltage_dc = int(line.split(":")[1].strip().replace("V", ""))
+                        in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
 
             
 
