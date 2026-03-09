@@ -132,7 +132,8 @@ class BluettiMonitorService:
 
                 in_power_dc = None
                 in_voltage_dc = None
-                lines = output.stdout.splitlines();                 
+                lines = output.stdout.splitlines();       
+                self._dbusservice["/Dc/0/Current"] = self.bluetti.voltage          
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
