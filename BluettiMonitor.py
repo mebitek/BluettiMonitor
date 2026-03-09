@@ -139,6 +139,7 @@ class BluettiMonitorService:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
                         logging.debug("* * * BATTERY SOC %s", soc)
                         self._dbusservice["/Soc"] = soc
+                        self.bluetti.soc = soc
 
                         if soc < 20:
                             logging.debug("* * * Set turbo mode")
@@ -154,6 +155,7 @@ class BluettiMonitorService:
                         power = int(line.split(":")[1].strip().replace("W", ""))
                         logging.debug("* * * POWER %s", power)
                         self._dbusservice["/Dc/0/Power"] = power
+                        self.bluetti.power = power
 
 
                     if "FieldName.DC_INPUT_POWER" in line:
@@ -164,8 +166,15 @@ class BluettiMonitorService:
             
 
                 self.bluetti.last_update = datetime.now()
+
+                if self.bluetti.power > 0:
+                    current = self.bluetti.power / 12.8
+                    self._dbusservice["/Dc/0/Current"] = current
+                    self.bluetti.current = current
+
+
                 if in_power_dc and in_voltage_dc:
-                    self._dbusservice["/Dc/0/Current"] = in_power_dc / in_voltage_dc
+                    self._dbusservice["/Dc/0/Current"] = (in_power_dc / in_voltage_dc) - self.bluetti.current
             else:
                 logging.debug("* * * Skip Interval")
 
