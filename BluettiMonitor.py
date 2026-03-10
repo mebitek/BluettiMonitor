@@ -203,9 +203,13 @@ class BluettiMonitorService:
 
 
                 if in_power_dc and in_voltage_dc:
+                    power = -power + in_power_dc
+                    self._dbusservice["/Dc/0/Power"] = power
                     current = (in_power_dc / in_voltage_dc) + current
 
                 if in_power_ac:
+                    power = power + in_power_ac
+                    self._dbusservice["/Dc/0/Power"] = power
                     current = current + (in_power_ac/14.6)
                 
                 self._dbusservice["/Dc/0/Current"] = current
