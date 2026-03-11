@@ -9,7 +9,7 @@ Inspired by:
 
 This code and its documentation can be found on: https://github.com/mebitek/BluettiMonitor
 Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py as basis for this service.
-Reading information from Tasmota SENSOR MQTT and puts the info on dbus as inverter.
+Reading information from bluetti bluetooth via bluetti-bt-lib and puts the info on dbus as battery.
 
 """
 
