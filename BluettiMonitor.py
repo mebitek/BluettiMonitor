@@ -250,7 +250,7 @@ class BluettiMonitorService:
         if reg_id == BluettiReg.DC_MONITOR_MODE.value:
             return GenericReg.OK.value, [0xFE]
         elif reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
-            capacityAh = float(self.calculate_capacity(self.bluetti.voltage))
+            capacityAh = float(self.calculate_capacity(self.bluetti.voltage)/100)
             return GenericReg.OK.value, utils.convert_decimal(capacityAh)
         elif reg_id == BluettiReg.VE_REG_CHARGED_VOLTAGE.value:
             return GenericReg.OK.value, utils.convert_decimal(1.36)
