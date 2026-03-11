@@ -26,4 +26,4 @@ class GenericReg(Enum):
 
 class BluettiReg(Enum):
     DC_MONITOR_MODE = 0xEEB8
-    VE_REG_BATTERY_CAPACITY = 0x1000
+    VE_REG_BAT_N_CAPACITY = 0x2401
