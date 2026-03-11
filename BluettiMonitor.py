@@ -238,9 +238,12 @@ class BluettiMonitorService:
     def vreg_link_get(reg_id):
         if reg_id == BluettiReg.DC_MONITOR_MODE:
             return GenericReg.OK.value, [0xFE]
-        if reg_id == BluettiMonitor.VE_REG_BATTERY_CAPACITY:
+        elif reg_id == BluettiMonitor.VE_REG_BATTERY_CAPACITY.value:
             battery_capacity = float(self.config.get_battery_capacity())
             return GenericReg.OK.value, utils.convert_decimal(battery_capacity)
+        elif reg_id == BluettiReg.VE_REG_CHARGED_VOLTAGE.value:
+            return GenericReg.OK.value, utils.convert_decimal(13.6)
+
         return GenericReg.OK.value, []
 
     @staticmethod
