@@ -22,6 +22,7 @@ import requests
 import _thread as thread
 import subprocess
 from datetime import datetime, timedelta
+import utils
 
 
 # add the path to our own packages for import
@@ -206,8 +207,8 @@ class BluettiMonitorService:
                 self._dbusservice["/Dc/0/Current"] = current
                 self.bluetti.current = current
 
-                time_to_go = self.remaining_time_seconds(self.bluetti.soc, self.bluetti.current)
-                self._dbusservice["/TimeToGo"] = time_to_go
+                # time_to_go = self.remaining_time_seconds(self.bluetti.soc, self.bluetti.current)
+                # self._dbusservice["/TimeToGo"] = time_to_go
 
                 logging.debug("* * * BATTERY SOC %s", self.bluetti.soc)
                 logging.debug("* * * BATTERY VOLTAGE %s", self.bluetti.voltage)
@@ -237,28 +238,29 @@ class BluettiMonitorService:
     def vreg_link_get(reg_id):
         if reg_id == BluettiReg.DC_MONITOR_MODE:
             return GenericReg.OK.value, [0xFE]
-        if reg_id == BluettiMonitor.VE_REG_BAT_N_CAPACITY:
-            return GenericReg.OK.value, [21]
+        if reg_id == BluettiMonitor.VE_REG_BATTERY_CAPACITY:
+            battery_capacity = float(self.config.get_battery_capacity())
+            return GenericReg.OK.value, utils.convert_decimal(battery_capacity)
         return GenericReg.OK.value, []
 
     @staticmethod
     def vreg_link_set(reg_id, data):
         return GenericReg.OK.value, data
 
-    def remaining_time_seconds(self, soc, current_a):
+    # def remaining_time_seconds(self, soc, current_a):
 
-        MIN_CURRENT = 0.1 
+    #     MIN_CURRENT = 0.1 
 
-        if current_a >= -MIN_CURRENT:
-            return 864000 
+    #     if current_a >= -MIN_CURRENT:
+    #         return 864000 
 
-        remaining_ah = self.config.get_battery_capacity() * (soc / 100.0)
+    #     remaining_ah = self.config.get_battery_capacity() * (soc / 100.0)
 
-        hours = remaining_ah / abs(current_a)
+    #     hours = remaining_ah / abs(current_a)
 
-        seconds = int(hours * 3600)
+    #     seconds = int(hours * 3600)
 
-        return seconds
+    #     return seconds
 
 def main():
     config = BluettiConfig()
