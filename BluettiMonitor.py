@@ -243,6 +243,9 @@ class BluettiMonitorService:
             return GenericReg.OK.value, utils.convert_decimal(battery_capacity)
         elif reg_id == BluettiReg.VE_REG_CHARGED_VOLTAGE.value:
             return GenericReg.OK.value, utils.convert_decimal(13.6)
+        elif reg_id == BluettiReg.VE_REG_PEUKERT_COEFFICIENT.value:
+            return GenericReg.OK.value, utils.convert_decimal(1.01)
+
         else:
             logging.debug("GET REG_ID %s" % regid)
             return GenericReg.OK.value, []
