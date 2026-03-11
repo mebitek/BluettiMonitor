@@ -67,9 +67,7 @@ class BluettiMonitorService:
         self._dbusservice = VeDbusService(servicename, register=False)
         self._paths = paths
 
-        vregtype = lambda *args, **kwargs: VregLinkItem(
-            *args, **kwargs, getvreg=self.vreglink_get, setvreg=self.vreglink_set
-        )
+        vregtype = lambda *args, **kwargs: VregLinkItem(*args, **kwargs, getvreg=self.vreg_link_get, setvreg=self.vreg_link_set)
 
         logging.debug("%s /DeviceInstance = %d" % (servicename, deviceinstance))
 
