@@ -113,8 +113,6 @@ class BluettiMonitorService:
         """
         while not self._stop_thread:
             try:
-                # Eseguiamo il comando bluetti-read (bloccante)
-                # Timeout aggiunto per evitare freeze indefiniti
                 output = subprocess.run(
                     ['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
                     capture_output=True, text=True, timeout=15
@@ -127,14 +125,11 @@ class BluettiMonitorService:
                 lines = output.stdout.splitlines()
                 current_soc = None
                 
-                # Parsing output
                 for line in lines:
                     try:
                         if "FieldName.BATTERY_SOC" in line:
                             current_soc = int(line.split(":")[1].strip().replace("%", ""))
                             
-                            # Logica controllo modalità (turbo/silent)
-                            # NOTA: Anche bluetti-write è bloccante, ma eseguito nel thread è sicuro per la GUI
                             if current_soc < 20:
                                 subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
                             elif current_soc > 80:
@@ -145,7 +140,6 @@ class BluettiMonitorService:
                         elif "FieldName.DC_OUTPUT_POWER" in line:
                             pwr = int(line.split(":")[1].strip().replace("W", ""))
                             power = pwr + power
-                            # self.bluetti.power sarà calcolato dopo
                         
                         elif "FieldName.AC_INPUT_POWER" in line:
                             in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
@@ -174,10 +168,6 @@ class BluettiMonitorService:
                     elif current_soc > 9: calc_voltage = 12.0
                     else: calc_voltage = 10.0
                 
-                # Calcolo Potenza e Corrente finali
-                # Power è positivo se la batteria sta erogando (carico), negativo se sta caricando
-                # Nota: La logica dei segni dipende da come bluetti-read riporta i valori
-                # Qui assumiamo che DC_OUTPUT_POWER sia un carico (positivo)
                 
                 total_power = power + (power/100) # Aggiunge consumo parassita
                 
@@ -187,23 +177,19 @@ class BluettiMonitorService:
                     if total_power > 0:
                         current = -(total_power / calc_voltage) # Negativo = scarica
                     
-                    # Se c'è input, inverto il segno (carica)
                     if in_power_dc and in_voltage_dc:
                         in_current = in_power_dc / in_voltage_dc
                         current += in_current # Sommo (carica positiva)
                         total_power -= in_power_dc # Netto potenza
                     
                     if in_power_ac:
-                        # Assumiamo efficienza o voltaggio nominale per input AC
                         current += (in_power_ac / 14.6) 
                         total_power -= in_power_ac
                 
-                # Calcolo TimeToGo e Capacity
                 capacityAh = self.config.get_battery_capacity() / calc_voltage
                 consumed = capacityAh * (100 - (current_soc or 0)) / 100
                 time_to_go = self.remaining_time_seconds(capacityAh, current_soc or 0, current)
 
-                # Aggiornamento sicuro delle variabili condivise
                 with self._data_lock:
                     self.bluetti.soc = current_soc if current_soc is not None else self.bluetti.soc
                     self.bluetti.voltage = calc_voltage
@@ -219,18 +205,9 @@ class BluettiMonitorService:
             except Exception:
                 logging.exception("Exception nel thread di lettura")
             
-            # Attendi l'intervallo configurato (convertito in secondi)
-            # Se config.get_interval() è in minuti, moltiplica per 60. 
-            # Qui assumiamo che l'intervallo sia in secondi o che la logica originale fosse:
-            # datetime.now() > last_update + timedelta(minutes=...)
-            # Usiamo un tempo fisso di sleep per evitare loop troppo veloci
-            sleep_time = 5 # Default fallback
-            # Cerchiamo di rispettare la configurazione se possibile
+            sleep_time = 5*60 # Default fallback
             try:
-                sleep_time = self.config.get_interval() 
-                # Se l'intervallo è in minuti (es. 1), convertiamolo
-                # Controlla la tua configurazione: se è 1, intendeva 1 minuto o 1 secondo?
-                # Per sicurezza mettiamo un minimo di 5 secondi per non intasare il BT
+                sleep_time = self.config.get_interval() * 60
                 if sleep_time < 5: sleep_time = 5 
             except:
                 pass
@@ -243,7 +220,6 @@ class BluettiMonitorService:
         Deve essere velocissimo: legge solo i dati e li scrive su DBus.
         """
         try:
-            # Copia veloce dei dati protetti
             with self._data_lock:
                 soc = self.bluetti.soc
                 voltage = self.bluetti.voltage
@@ -262,8 +238,7 @@ class BluettiMonitorService:
             self._dbusservice["/ConsumedAmphours"] = consumed
             self._dbusservice["/TimeToGo"] = time_to_go
 
-            # Log (opzionale, ridurre verbosità in produzione)
-            # logging.debug(f"Update: SOC={soc}% V={voltage} I={current}")
+            logging.debug(f"Update: SOC={soc}% V={voltage} I={current}")
 
         except Exception:
             logging.exception("Exception during DBus update")
@@ -284,7 +259,6 @@ class BluettiMonitorService:
         return capacityWh / voltage
 
     def vreg_link_get(self, reg_id):
-        # Accesso protetto ai dati se necessario
         with self._data_lock:
             voltage = self.bluetti.voltage
         
