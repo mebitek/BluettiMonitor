@@ -24,5 +24,5 @@ class VregLinkItem(VeDbusItemExport):
 class GenericReg(Enum):
     OK = 0x0000
 
-class ChargerReg(Enum):
+class BluettiReg(Enum):
     DC_MONITOR_MODE = 0xEEB8

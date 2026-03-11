@@ -233,7 +233,7 @@ class BluettiMonitorService:
 
     @staticmethod
     def vreg_link_get(reg_id):
-        if reg_id == ChargerReg.DC_MONITOR_MODE:
+        if reg_id == BluettiReg.DC_MONITOR_MODE:
             return GenericReg.OK.value, [0xFE]
         return GenericReg.OK.value, []
 
@@ -268,7 +268,9 @@ def main():
             "/Dc/0/Power": {"initial": 0},
             "/Dc/0/Temperature": {"initial": 0},
             "/Soc": {"initial": 0},
-             "/UpdateIndex": {"initial": 0},
+            '/History/EnergyOut': {'initial': None},
+            "/UpdateIndex": {"initial": 0},
+            "/Dc/Battery/Capacity": {"initial": 21}
 
         },
         config=config,
