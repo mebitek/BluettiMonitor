@@ -185,6 +185,9 @@ class BluettiMonitorService:
                 elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
                     self.bluetti.voltage = 10.0
 
+                capacityWh = self.config.get_battery_capacity()
+                capacityAh = capacityWh / self.bluetti.voltage
+                self._dbusservice["/Capacity"]
 
                 self.bluetti.last_update = datetime.now()
 
@@ -301,6 +304,9 @@ def main():
     # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
     DBusGMainLoop(set_as_default=True)
 
+    capacityWh = config.get_battery_capacity()
+    capacityAh = capacityWh / 12.8
+
     pvac_output = BluettiMonitorService(
         servicename="com.victronenergy.battery.bluetti",
         deviceinstance=295,
@@ -310,7 +316,7 @@ def main():
             "/Dc/0/Power": {"initial": 0},
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
-            "/Capacity": {"initial": config.get_battery_capacity()},
+            "/Capacity": {"initial": capacityWh},
             "/TimeToGo": {"initial": 0},
             "/ConsumedAmphours": {"initial": 0},
 

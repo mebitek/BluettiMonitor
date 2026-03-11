@@ -36,7 +36,7 @@ class BluettiConfig:
         return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
 
     def get_battery_capacity(self):
-        return int(self.config.get("Setup", "BatteryCapacity", fallback=21)) 
+        return int(self.config.get("Setup", "BatteryCapacity", fallback=268.8)) 
 
 
     def get_debug(self):
