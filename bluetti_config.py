@@ -42,6 +42,13 @@ class BluettiConfig:
     def get_battery_capacity(self):
         return int(self.config.get("Setup", "BatteryCapacity", fallback=268.8)) 
 
+    def get_low_soc_alarm_set(self):
+        return int(self.config.get("Setup", "LowSocAlarmSet", fallback=30)) 
+
+    def get_low_soc_alarm_clear(self);
+        return int(self.config.get("Setup", "LowSocAlarmClear", fallback=50)) 
+
+
 
     def get_debug(self):
         val = self.config.get("Setup", "debug", fallback=False)

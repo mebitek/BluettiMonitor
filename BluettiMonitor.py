@@ -185,6 +185,11 @@ class BluettiMonitorService:
                 elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
                     self.bluetti.voltage = 10.0
 
+                if self.bluetti.soc < self.config.get_low_soc_alarm_set():
+                    self._dbusservice["/Alarms/LowSoc"] = 1
+                if self.bluetti.soc > self.config.get_low_soc_alarm_clear():
+                    self._dbusservice["/Alarms/LowSoc"] = 1
+
 
                 capacityAh = self.calculate_capacity(self.bluetti.voltage)
                 self._dbusservice["/Capacity"] = capacityAh
@@ -266,6 +271,10 @@ class BluettiMonitorService:
             return GenericReg.OK.value, utils.convert_decimal(0.02) #tail current
         elif reg_id == BluettiReg.VE_REG_TTG_DELTA_T.value:
             GenericReg.OK.value, utils.convert_decimal(3)
+        elif reg_id == BluettiReg.VE_REG_LOW_SOC.value:
+            GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_set())
+        elif reg_id == BluettiReg.VE_REG_LOW_SOC_CLEAR.value:
+            GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_clear())
         else:
             logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
@@ -276,6 +285,12 @@ class BluettiMonitorService:
         if reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
             decimal = utils.convert_to_decimal(bytearray(data))
             self.config.write_to_config(decimal, "Setup", "BatteryCapacity")
+        elif reg_id == BluettiReg.VE_REG_LOW_SOC.value:
+            decimal = utils.convert_to_decimal(bytearray(data))
+            self.config.write_to_config(decimal, "Setup", "LowSocAlarmSet")
+        elif reg_id == BluettiReg.VE_REG_LOW_SOC_CLEAR.value:
+            decimal = utils.convert_to_decimal(bytearray(data))
+            self.config.write_to_config(decimal, "Setup", "LowSocAlarmClear")
         return GenericReg.OK.value, data
 
     def remaining_time_seconds(self, capacity, soc, current_a):
@@ -326,9 +341,7 @@ def main():
             "/ConsumedAmphours": {"initial": 0},
 
             "/Settings/MonitorMode": {"initial": 0},
-            "/Info/MaxChargeCurrent": {"initial": 20},
-            "/Info/MaxDischargeCurrent": {"initial": 20},
-            
+            "/Alarms/LowSoc": {"initial": 0},            
 
         },
         config=config,
