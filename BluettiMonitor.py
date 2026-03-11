@@ -187,7 +187,7 @@ class BluettiMonitorService:
 
                 capacityWh = self.config.get_battery_capacity()
                 capacityAh = capacityWh / self.bluetti.voltage
-                self._dbusservice["/Capacity"]
+                self._dbusservice["/Capacity"] = capacityAh
 
                 self.bluetti.last_update = datetime.now()
 
@@ -243,7 +243,7 @@ class BluettiMonitorService:
         return True  # accept the change
 
     @staticmethod
-    def vreg_link_get(reg_id):
+    def vreg_link_get(self, reg_id):
         if reg_id == BluettiReg.DC_MONITOR_MODE.value:
             return GenericReg.OK.value, [0xFE]
         elif reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
@@ -260,11 +260,11 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_CURRENT_THRESHOLD.value:
             return GenericReg.OK.value, utils.convert_decimal(0.1)
         elif reg_id == BluettiReg.VE_REG_CHARGED_CURRENT.value:
-            return GenericReg.OK.value, utils.convert_decimal(0.2) #tail current
+            return GenericReg.OK.value, utils.convert_decimal(0.02) #tail current
         elif reg_id == BluettiReg.VE_REG_TTG_DELTA_T.value:
             GenericReg.OK.value, utils.convert_decimal(3)
         else:
-            logging.debug("GET REG_ID %s" % regid)
+            logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
 
 
