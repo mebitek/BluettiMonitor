@@ -113,33 +113,43 @@ class BluettiMonitorService:
         """
         while not self._stop_thread:
             try:
-                output = subprocess.run(
+                # Eseguiamo il comando bluetti-read
+                # NOTA: Usiamo stdout/stderr PIPE per compatibilità con vecchi Python
+                process = subprocess.Popen(
                     ['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
-                    capture_output=True, text=True, timeout=15
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
                 )
+                stdout, stderr = process.communicate(timeout=15) # Timeout di 15 secondi
+                
+                # Simuliamo l'output per il parsing
+                output_lines = stdout.splitlines()
 
                 in_power_dc = None
                 in_power_ac = None 
                 in_voltage_dc = None
                 power = self.config.get_standby_current()
-                lines = output.stdout.splitlines()
                 current_soc = None
                 
-                for line in lines:
+                # Parsing output
+                for line in output_lines:
                     try:
                         if "FieldName.BATTERY_SOC" in line:
                             current_soc = int(line.split(":")[1].strip().replace("%", ""))
                             
+                            # Logica controllo modalità
                             if current_soc < 20:
-                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
+                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'], timeout=5)
                             elif current_soc > 80:
-                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
+                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'], timeout=5)
                             else:
-                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
+                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'], timeout=5)
 
                         elif "FieldName.DC_OUTPUT_POWER" in line:
                             pwr = int(line.split(":")[1].strip().replace("W", ""))
-                            power = pwr + power
+                            power = power + pwr
+                            # Power è consumo
                         
                         elif "FieldName.AC_INPUT_POWER" in line:
                             in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
@@ -150,12 +160,12 @@ class BluettiMonitorService:
                         elif "FieldName.DC_INPUT_VOLTAGE" in line: 
                             in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
                     except (ValueError, IndexError):
-                        logging.warning(f"Errore parsing linea: {line}")
                         continue
 
-                # Calcolo Voltage basato su SOC
+                # Calcolo Voltage
                 calc_voltage = 12.8 # Default
                 if current_soc is not None:
+                    # Copia-incolla della tua tabella volt/soc
                     if current_soc == 100: calc_voltage = 13.6
                     elif current_soc == 99: calc_voltage = 13.4
                     elif current_soc > 90: calc_voltage = 13.3
@@ -168,30 +178,32 @@ class BluettiMonitorService:
                     elif current_soc > 9: calc_voltage = 12.0
                     else: calc_voltage = 10.0
                 
-                
-                total_power = power + (power/100) # Aggiunge consumo parassita
-                
-                # Calcolo corrente approssimativo
+                # Calcolo Potenza e Corrente
+                total_power = power + (power/100) 
                 current = 0
                 if calc_voltage > 0:
                     if total_power > 0:
-                        current = -(total_power / calc_voltage) # Negativo = scarica
+                        current = -(total_power / calc_voltage) 
                     
                     if in_power_dc and in_voltage_dc:
                         in_current = in_power_dc / in_voltage_dc
-                        current += in_current # Sommo (carica positiva)
-                        total_power -= in_power_dc # Netto potenza
+                        current += in_current 
+                        total_power -= in_power_dc 
                     
                     if in_power_ac:
                         current += (in_power_ac / 14.6) 
                         total_power -= in_power_ac
                 
+                # Calcoli finali
                 capacityAh = self.config.get_battery_capacity() / calc_voltage
                 consumed = capacityAh * (100 - (current_soc or 0)) / 100
                 time_to_go = self.remaining_time_seconds(capacityAh, current_soc or 0, current)
 
+                # Aggiornamento sicuro
                 with self._data_lock:
-                    self.bluetti.soc = current_soc if current_soc is not None else self.bluetti.soc
+                    if current_soc is not None:
+                        self.bluetti.soc = current_soc
+                    
                     self.bluetti.voltage = calc_voltage
                     self.bluetti.power = total_power
                     self.bluetti.current = current
@@ -201,24 +213,22 @@ class BluettiMonitorService:
                     self.bluetti.last_update = datetime.now()
 
             except subprocess.TimeoutExpired:
-                logging.error("Timeout durante lettura bluetooth (bluetti-read)")
+                # Se il comando impiega troppo, uccidiamo il processo
+                if 'process' in locals() and process.poll() is None:
+                    process.kill()
+                logging.error("Timeout lettura bluetooth (processo ucciso)")
             except Exception:
-                logging.exception("Exception nel thread di lettura")
+                logging.exception("Errore generico nel thread lettura")
             
+            # --- CORREZIONE INTERVALLO ---
             try:
                 interval_minutes = self.config.get_interval()
                 sleep_seconds = interval_minutes * 60
-                
-                if sleep_seconds < 10:
-                    sleep_seconds = 60 # Fallback sicuro
-                    
-                logging.debug(f"Sleeping for {sleep_seconds} seconds...")
-                time.sleep(sleep_seconds)
-                
+                if sleep_seconds < 10: sleep_seconds = 60
             except:
-                pass
-                
-            time.sleep(sleep_time)
+                sleep_seconds = 60
+            
+            time.sleep(sleep_seconds)
 
     def _update(self):
         """
