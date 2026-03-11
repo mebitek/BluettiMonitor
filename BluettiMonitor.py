@@ -211,6 +211,10 @@ class BluettiMonitorService:
                 time_to_go = self.remaining_time_seconds(self.bluetti.soc, self.bluetti.current)
                 self._dbusservice["/TimeToGo"] = time_to_go
 
+                consumed = self.config.get_battery_capacity() * (100 - self.bluetti.soc) / 100
+                self._dbusservice["/ConsumedAmphours"] = consumed
+
+
                 logging.debug("* * * BATTERY SOC %s", self.bluetti.soc)
                 logging.debug("* * * BATTERY VOLTAGE %s", self.bluetti.voltage)
                 logging.debug("* * * CURRENT %s", self.bluetti.current)
@@ -308,6 +312,8 @@ def main():
             "/UpdateIndex": {"initial": 0},
             "/Capacity": {"initial": config.get_battery_capacity()},
             "/TimeToGo": {"initial": 0},
+            "/ConsumedAmphours": {"initial": 0},
+
             "/Settings/MonitorMode": {"initial": 0},
             "/Info/MaxChargeCurrent": {"initial": 20},
             "/Info/MaxDischargeCurrent": {"initial": 20},
