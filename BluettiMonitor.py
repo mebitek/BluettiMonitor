@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """
 Created by mebitek in 2026.
-Modified with threading support to prevent GUI blocking on Venus OS.
-Compatible with older Python versions (no capture_output arg).
+Modified with threading support + Debug on DeviceName.
 """
 import os
 import sys
@@ -16,7 +15,6 @@ import subprocess
 from datetime import datetime, timedelta
 import utils
 
-# add the path to our own packages for import
 sys.path.insert(1, "/data/SetupHelper/velib_python")
 from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
@@ -48,14 +46,12 @@ class BluettiMonitorService:
         self.config = config or BluettiConfig()
         self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 12.8, 0, 0, 0)
         
-        # Lock per gestire l'accesso concorrente ai dati
         self._data_lock = threading.Lock()
         self._stop_thread = False
 
         logging.debug("* * * MAC %s", self.bluetti.mac)
         logging.debug("* * * TYPE %s", self.bluetti.type)
         
-        # dbus service
         self._dbusservice = VeDbusService(servicename, register=False)
         self._paths = paths
         
@@ -63,18 +59,15 @@ class BluettiMonitorService:
         
         logging.debug("%s /DeviceInstance = %d" % (servicename, deviceinstance))
         productname = "Bluetti " + config.get_device_type()
-        logging.debug("* * * Product name is %s", productname)
         
-        # Create the management objects
         self._dbusservice.add_path("/Mgmt/ProcessName", __file__)
         self._dbusservice.add_path("/Mgmt/ProcessVersion", config.get_version())
         self._dbusservice.add_path("/Mgmt/Connection", connection)
         
-        # Create the mandatory objects
         self._dbusservice.add_path("/DeviceInstance", deviceinstance)
         self._dbusservice.add_path("/ProductId", 0xA383)
         self._dbusservice.add_path("/ProductName", productname)
-        self._dbusservice.add_path("/DeviceName", productname)
+        self._dbusservice.add_path("/DeviceName", productname) # Questo campo lo useremo per il debug
         self._dbusservice.add_path("/FirmwareVersion", 0x0419)
         self._dbusservice.add_path("/HardwareVersion", 8)
         self._dbusservice.add_path("/Connected", 1)
@@ -99,41 +92,52 @@ class BluettiMonitorService:
         
         self._dbusservice.register()
         
-        # Avvio il thread di lettura in background
+        # Avvio thread
         self._thread = threading.Thread(target=self._background_reader, daemon=True)
         self._thread.start()
 
-        # Registro il timer per l'aggiornamento DBus (Main Loop)
         GLib.timeout_add(1000, self._update)
 
     def _background_reader(self):
-        """
-        Questo metodo gira in un thread separato.
-        """
         while not self._stop_thread:
             try:
-                # Eseguiamo il comando bluetti-read
-                # Usiamo universal_newlines=True per compatibilità con vecchi Python
-                # Usiamo stdout=PIPE invece di capture_output per compatibilità
                 cmd = ['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type]
-                output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=15)
+                # Eseguiamo il comando
+                output = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=20)
 
+                # DEBUG VISIVO: Scriviamo l'output grezzo sul DeviceName
+                # Limitiamo la lunghezza per non rompere il DBus
+                debug_output = output.stdout.strip()[:50] 
+                if not debug_output:
+                    debug_output = "ERR:EMPTY_OUTPUT"
+                # Se stderr ha roba, mostriamo quella
+                if output.stderr:
+                    debug_output = "ERR:" + output.stderr.strip()[:40]
+
+                # Aggiorniamo il DeviceName con l'output grezzo per farti vedere cosa arriva
+                # Usa _data_lock per sicurezza anche se qui è solo scrittura
+                with self._data_lock:
+                    self._dbusservice["/DeviceName"] = debug_output
+                
                 lines = output.stdout.splitlines()
                 
                 in_power_dc = None
                 in_power_ac = None 
                 in_voltage_dc = None
+                # Prendiamo standby dalla config
                 power = self.config.get_standby_current()
                 current_soc = None
                 
-                # Parsing output
                 for line in lines:
                     try:
                         if "FieldName.BATTERY_SOC" in line:
                             val = line.split(":")[1].strip().replace("%", "")
                             current_soc = int(val)
-                            
-                            # Logica controllo modalità
+                            # Aggiorniamo il nome con il SOC per conferma lettura OK
+                            with self._data_lock:
+                                self._dbusservice["/DeviceName"] = f"OK SOC:{current_soc}%"
+
+                            # Logica modalità
                             if current_soc < 20:
                                 subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'], timeout=5)
                             elif current_soc > 80:
@@ -161,7 +165,7 @@ class BluettiMonitorService:
                         pass
 
                 # Calcolo Voltage
-                calc_voltage = 12.8 # Default
+                calc_voltage = 12.8
                 if current_soc is not None:
                     if current_soc == 100: calc_voltage = 13.6
                     elif current_soc == 99: calc_voltage = 13.4
@@ -176,29 +180,25 @@ class BluettiMonitorService:
                     else: calc_voltage = 10.0
                 
                 # Calcolo Potenza e Corrente
-                total_power = power + (power/100) # parasite consumption
+                total_power = power + (power/100)
                 current = 0
                 if calc_voltage > 0:
-                    # Se c'è consumo (potenza positiva)
                     if total_power > 0:
-                        current = -(total_power / calc_voltage) # Negativo = scarica
+                        current = -(total_power / calc_voltage)
                     
-                    # Se c'è input (carica)
                     if in_power_dc and in_voltage_dc:
                         in_current = in_power_dc / in_voltage_dc
-                        current += in_current # Somma (carica)
-                        total_power -= in_power_dc # Netto
+                        current += in_current
+                        total_power -= in_power_dc
                     
                     if in_power_ac:
-                        current += (in_power_ac / 14.6) 
+                        current += (in_power_ac / 14.6)
                         total_power -= in_power_ac
                 
-                # Calcoli batteria
                 capacityAh = self.config.get_battery_capacity() / calc_voltage
                 consumed = capacityAh * (100 - (current_soc if current_soc else 0)) / 100
                 time_to_go = self.remaining_time_seconds(capacityAh, current_soc if current_soc else 0, current)
 
-                # Aggiornamento sicuro variabili condivise
                 with self._data_lock:
                     if current_soc is not None:
                         self.bluetti.soc = current_soc
@@ -208,33 +208,28 @@ class BluettiMonitorService:
                     self.bluetti.capacity = capacityAh
                     self.bluetti.consumed = consumed
                     self.bluetti.time_to_go = time_to_go
-                    
-                    # Resetto eventuale flag di errore sul nome
-                    self._dbusservice["/DeviceName"] = self._dbusservice["/ProductName"]
 
             except subprocess.TimeoutExpired:
-                logging.error("Timeout lettura bluetooth")
                 with self._data_lock:
-                    self._dbusservice["/DeviceName"] = "ERROR_TIMEOUT"
+                    self._dbusservice["/DeviceName"] = "ERR:TIMEOUT"
+            except FileNotFoundError:
+                 with self._data_lock:
+                    self._dbusservice["/DeviceName"] = "ERR:CMD_NOT_FOUND"
             except Exception:
-                logging.exception("Errore generico nel thread lettura")
                 with self._data_lock:
-                    self._dbusservice["/DeviceName"] = "ERROR_EXCEPTION"
+                    self._dbusservice["/DeviceName"] = "ERR:EXCEPTION"
             
-            # Attesa intervallo in MINUTI
+            # Sleep
             try:
                 interval_minutes = self.config.get_interval()
                 sleep_seconds = interval_minutes * 60
-                if sleep_seconds < 30: sleep_seconds = 60 # Minimo sicuro
+                if sleep_seconds < 30: sleep_seconds = 60
             except:
                 sleep_seconds = 60
             
             time.sleep(sleep_seconds)
 
     def _update(self):
-        """
-        Metodo veloce sul Main Loop.
-        """
         try:
             with self._data_lock:
                 soc = self.bluetti.soc
@@ -254,7 +249,7 @@ class BluettiMonitorService:
             self._dbusservice["/TimeToGo"] = time_to_go
 
         except Exception:
-            logging.exception("Errore durante aggiornamento DBus")
+            pass
 
         index = self._dbusservice["/UpdateIndex"] + 1
         if index > 255:
@@ -264,7 +259,6 @@ class BluettiMonitorService:
         return True
 
     def _handlechangedvalue(self, path, value):
-        logging.debug("someone else updated %s to %s" % (path, value))
         return True
 
     def calculate_capacity(self, voltage):
@@ -295,7 +289,6 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_TTG_DELTA_T.value:
             return GenericReg.OK.value, utils.convert_decimal(3)
         else:
-            logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
 
     @staticmethod
