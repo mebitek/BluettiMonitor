@@ -248,7 +248,11 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_CHARGE_DETECTION_TIME.value:
             return GenericReg.OK.value, utils.convert_decimal(0.03)
         elif reg_id == BluettiReg.VE_REG_CHARGE_EFFICIENCY.value:
-            return GenericReg.OK.value, utils.convert_decimal(0.09)
+            return GenericReg.OK.value, utils.convert_decimal(0.98)
+        elif reg_id == BluettiReg.VE_REG_CURRENT_THRESHOLD.value:
+            return GenericReg.OK.value, utils.convert_decimal(0.1)
+        elif reg_id == BluettiReg.VE_REG_BAT_TAIL_CURRENT.value:
+            return GenericReg.OK.value, utils.convert_decimal(0.02)
         else:
             logging.debug("GET REG_ID %s" % regid)
             return GenericReg.OK.value, []
