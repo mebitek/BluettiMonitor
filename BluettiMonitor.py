@@ -269,7 +269,7 @@ def main():
             "/Dc/0/Temperature": {"initial": 0},
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
-            "/Dc/Battery/Capacity": {"initial": 21}
+            "/Capacity": {"initial": 21}
 
         },
         config=config,
