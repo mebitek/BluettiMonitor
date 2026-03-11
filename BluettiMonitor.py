@@ -214,7 +214,7 @@ class BluettiMonitorService:
                 time_to_go = self.remaining_time_seconds(self.bluetti.soc, self.bluetti.current)
                 self._dbusservice["/TimeToGo"] = time_to_go
 
-                consumed = self.config.get_battery_capacity() * (100 - self.bluetti.soc) / 100
+                consumed = capacityAh * (100 - self.bluetti.soc) / 100
                 self._dbusservice["/ConsumedAmphours"] = consumed
 
 
