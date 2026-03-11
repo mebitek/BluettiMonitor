@@ -205,10 +205,16 @@ class BluettiMonitorService:
             except Exception:
                 logging.exception("Exception nel thread di lettura")
             
-            sleep_time = 5*60 # Default fallback
             try:
-                sleep_time = self.config.get_interval() * 60
-                if sleep_time < 5: sleep_time = 5 
+                interval_minutes = self.config.get_interval()
+                sleep_seconds = interval_minutes * 60
+                
+                if sleep_seconds < 10:
+                    sleep_seconds = 60 # Fallback sicuro
+                    
+                logging.debug(f"Sleeping for {sleep_seconds} seconds...")
+                time.sleep(sleep_seconds)
+                
             except:
                 pass
                 
