@@ -29,7 +29,7 @@ sys.path.insert(1, "/data/SetupHelper/velib_python")
 
 from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
-from vreg_link_item import VregLinkItem, GenericReg, ChargerReg
+from vreg_link_item import VregLinkItem, GenericReg, BluettiReg
 
 from bluetti_config import BluettiConfig
 
@@ -268,7 +268,6 @@ def main():
             "/Dc/0/Power": {"initial": 0},
             "/Dc/0/Temperature": {"initial": 0},
             "/Soc": {"initial": 0},
-            '/History/EnergyOut': {'initial': None},
             "/UpdateIndex": {"initial": 0},
             "/Dc/Battery/Capacity": {"initial": 21}
 
