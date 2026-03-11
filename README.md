@@ -1,4 +1,4 @@
-# venus.Bluetti Monitor v0.1
+# venus.Bluetti Monitor v1.0.0
 Service to integrate a bluetti power station  into cerbos gui
 
 The script has been developed with my current RV setup in mind.
@@ -14,12 +14,20 @@ you need to install via pip the `bluetti-bt-lib`
     - `mac`: bluetooth mac address
     - `type`: bluetti device
     - `serial`: device serial 
-    - `interval`: itnerval to query the bluetti
-
+    - `interval`: interval to query the bluetti
+    - `standbycurrent`: current auto consumed by bluetti
+    - `batterycapacity`: battery capacity in wh
     - `debug`: set log level to debug
 
 ### Installation
+* #### prerequisites
 
+    1. install pip and bluetti-bt-lib on venus os:
+        - `opkg update`
+        - `opkg install python3-pip`
+        - `pip3 install bluetti-bt-lib`
+    2. get the bluetti mac
+        - `bluetti-scan`
 * #### SetupHelper
     1. install [SetupHelper](https://github.com/kwindrem/SetupHelper)
     2. enter `Package Mager` in Settings
