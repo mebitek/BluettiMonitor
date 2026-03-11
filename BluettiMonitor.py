@@ -270,7 +270,7 @@ def main():
             "/Dc/0/Power": {"initial": 0},
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
-            #"/Capacity": {"initial": config.get_battery_capacity()},
+            "/Capacity": {"initial": config.get_battery_capacity()},
             "/ConsumedAmphours": {"initial": 0},
             "/TimeToGo": {"initial": 0}
 
