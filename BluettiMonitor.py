@@ -31,6 +31,7 @@ sys.path.insert(1, "/data/SetupHelper/velib_python")
 from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
 from vreg_link_item import VregLinkItem, GenericReg, BluettiReg
+from settingsdevice import SettingsDevice
 
 from bluetti_config import BluettiConfig
 
@@ -252,7 +253,7 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_CURRENT_THRESHOLD.value:
             return GenericReg.OK.value, utils.convert_decimal(0.1)
         elif reg_id == BluettiReg.VE_REG_CHARGED_CURRENT.value:
-            return GenericReg.OK.value, utils.convert_decimal(2)
+            return GenericReg.OK.value, utils.convert_decimal(0.2) #tail current
         elif reg_id == BluettiReg.VE_REG_TTG_DELTA_T.value:
             GenericReg.OK.value, utils.convert_decimal(3)
         else:
@@ -306,7 +307,10 @@ def main():
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
             "/Capacity": {"initial": config.get_battery_capacity()},
-            "/Settings/MonitorMode": {"initial": 0},
+            "/Settings/MonitorMode": {"initial": 1},
+            "/Info/MaxChargeCurrent": {"initial": 20},
+            "/Info/MaxDischargeCurrent": {"initial": 20},
+            
 
         },
         config=config,
