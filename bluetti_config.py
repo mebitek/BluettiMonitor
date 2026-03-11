@@ -30,7 +30,11 @@ class BluettiConfig:
         return self.config.get("Setup", "Serial", fallback="XXXXXXXX")
 
     def get_interval(self):
-        return int(self.config.get("Setup", "Interval", fallback=10))
+        interval = int(self.config.get("Setup", "Interval", fallback=10))
+        if interval = 0:
+            return 1
+        else:
+            return interval
 
     def get_standby_current(self):
         return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
