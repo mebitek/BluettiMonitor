@@ -125,7 +125,6 @@ class BluettiMonitorService:
                 in_power_ac = None 
                 in_voltage_dc = None
                 power = self.config.get_standby_current() # round standy consumpiton
-                soc = 100
                 lines = output.stdout.splitlines();       
 
                         
@@ -136,10 +135,10 @@ class BluettiMonitorService:
                         self._dbusservice["/Soc"] = soc
                         self.bluetti.soc = soc
 
-                        if soc < 20:
+                        if self.bluetti.soc < 20:
                             logging.debug("* * * Set turbo mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
-                        elif soc > 80:
+                        elif self.bluetti.soc > 80:
                             logging.debug("* * * Set silent mode")
                             subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
 
@@ -161,27 +160,27 @@ class BluettiMonitorService:
                         in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
 
             
-                if soc == 100:
+                if self.bluetti.soc == 100:
                     self.bluetti.voltage = 13.6
-                elif soc == 99:
+                elif self.bluetti.soc == 99:
                     self.bluetti.voltage = 13.4
-                elif soc > 90 and soc < 99:
+                elif self.bluetti.soc > 90 and self.bluetti.soc < 99:
                     self.bluetti.voltage = 13.3
-                elif soc > 70 and soc < 90:
+                elif self.bluetti.soc > 70 and self.bluetti.soc < 90:
                     self.bluetti.voltage = 13.2
-                elif soc > 40 and soc < 70:
+                elif self.bluetti.soc > 40 and self.bluetti.soc < 70:
                     self.bluetti.voltage = 13.1
-                elif soc > 30 and soc < 40:
+                elif self.bluetti.soc > 30 and self.bluetti.soc < 40:
                     self.bluetti.voltage = 13.0
-                elif soc > 20 and soc < 30:
+                elif self.bluetti.soc > 20 and self.bluetti.soc < 30:
                     self.bluetti.voltage = 12.9
-                elif soc > 17 and soc < 20:
+                elif self.bluetti.soc > 17 and self.bluetti.soc < 20:
                     self.bluetti.voltage = 12.8
-                elif soc > 14 and soc < 17:
+                elif self.bluetti.soc > 14 and self.bluetti.soc < 17:
                     self.bluetti.voltage = 12.5
-                elif soc > 9 and soc < 14:
+                elif self.bluetti.soc > 9 and self.bluetti.soc < 14:
                     self.bluetti.voltage = 12.0
-                elif soc > 0 and soc < 9:
+                elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
                     self.bluetti.voltage = 10.0
 
 
@@ -207,7 +206,10 @@ class BluettiMonitorService:
                 self._dbusservice["/Dc/0/Current"] = current
                 self.bluetti.current = current
 
-                logging.debug("* * * BATTERY SOC %s", soc)
+                time_to_go = self.remaining_time_seconds(self.bluetti.soc, self.bluetti.current)
+                self._dbusservice["/TimeToGo"] = time_to_go
+
+                logging.debug("* * * BATTERY SOC %s", self.bluetti.soc)
                 logging.debug("* * * BATTERY VOLTAGE %s", self.bluetti.voltage)
                 logging.debug("* * * CURRENT %s", self.bluetti.current)
                 logging.debug("* * * DC POWER %s", power)
@@ -243,6 +245,20 @@ class BluettiMonitorService:
     def vreg_link_set(reg_id, data):
         return GenericReg.OK.value, data
 
+    def remaining_time_seconds(self, soc, current_a):
+
+        MIN_CURRENT = 0.1 
+
+        if current_a >= -MIN_CURRENT:
+            return 864000 
+
+        remaining_ah = self.config.get_battery_capacity() * (soc / 100.0)
+
+        hours = remaining_ah / abs(current_a)
+
+        seconds = int(hours * 3600)
+
+        return seconds
 
 def main():
     config = BluettiConfig()
