@@ -29,6 +29,7 @@ sys.path.insert(1, "/data/SetupHelper/velib_python")
 
 from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
+from vreg_link_item import VregLinkItem, GenericReg, ChargerReg
 
 from bluetti_config import BluettiConfig
 
@@ -43,22 +44,6 @@ class Bluetti:
         self.temperature = temperature
         self.soc = soc
         self.last_update = None
-
-    def get_mode_and_state(self):
-        # /Mode  <- Switch position: 1=Charger only,2=Inverter only;3=On;4=Off;5=Low Power/Eco;
-        #           251=Passthrough;252=Standby;253=Hibernate
-        # /State <- 0=Off; 1=Low Power; 2=Fault; 9=Inverting
-
-        if self.state == "Offline":
-            return 4, 0
-        if self.status == "ON":
-            if self.power > 15:
-                return 2, 9
-            else:
-                return 5, 1
-        else:
-            return 4, 0
-
 
 class BluettiMonitorService:
     def __init__(
@@ -114,7 +99,7 @@ class BluettiMonitorService:
         self._dbusservice.add_path('/Devices/0/ProductName', "productname")
         self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
         self._dbusservice.add_path('/Devices/0/Serial', config.get_serial())
-        #self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
+        self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
 
         for path, settings in self._paths.items():
             self._dbusservice.add_path(
@@ -247,6 +232,16 @@ class BluettiMonitorService:
     def _handlechangedvalue(self, path, value):
         logging.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
+
+    @staticmethod
+    def vreg_link_get(reg_id):
+        if reg_id == ChargerReg.DC_MONITOR_MODE:
+            return GenericReg.OK.value, [0xFE]
+        return GenericReg.OK.value, []
+
+    @staticmethod
+    def vreg_link_set(reg_id, data):
+        return GenericReg.OK.value, data
 
 
 def main():
