@@ -31,7 +31,7 @@ class BluettiConfig:
 
     def get_interval(self):
         interval = int(self.config.get("Setup", "Interval", fallback=10))
-        if interval = 0:
+        if interval == 0:
             return 1
         else:
             return interval
@@ -40,7 +40,7 @@ class BluettiConfig:
         return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
 
     def get_battery_capacity(self):
-        return int(self.config.get("Setup", "BatteryCapacity", fallback=268.8)) 
+        return float(self.config.get("Setup", "BatteryCapacity", fallback=268.8)) 
 
     def get_low_soc_alarm_set(self):
         return int(self.config.get("Setup", "LowSocAlarmSet", fallback=30)) 
@@ -61,7 +61,7 @@ class BluettiConfig:
         logging.debug("Writing config file %s %s " % (path, key))
         self.config[path][key] = str(value)
         with open(
-            "%s/../conf/tasmota_config.ini"
+            "%s/../conf/bluetti_config.ini"
             % (os.path.dirname(os.path.realpath(__file__))),
             "w",
         ) as configfile:
