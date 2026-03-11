@@ -307,6 +307,7 @@ def main():
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
             "/Capacity": {"initial": config.get_battery_capacity()},
+            "/InstalledCapacity": {"initial": config.get_battery_capacity()},
             "/Settings/MonitorMode": {"initial": 0},
             "/Info/MaxChargeCurrent": {"initial": 20},
             "/Info/MaxDischargeCurrent": {"initial": 20},
