@@ -127,7 +127,7 @@ class BluettiMonitorService:
                 in_power_ac = None 
                 in_voltage_dc = None
                 power = self.config.get_standby_current() # round standy consumpiton
-                lines = output.stdout.splitlines();       
+                lines = output.stdout.splitlines()    
 
                         
                 for line in lines:
@@ -187,7 +187,7 @@ class BluettiMonitorService:
 
                 if self.bluetti.soc < self.config.get_low_soc_alarm_set():
                     self._dbusservice["/Alarms/LowSoc"] = 1
-                if self.bluetti.soc > self.config.get_low_soc_alarm_cleari():
+                if self.bluetti.soc > self.config.get_low_soc_alarm_clear():
                     self._dbusservice["/Alarms/LowSoc"] = 0
 
 
@@ -277,8 +277,6 @@ class BluettiMonitorService:
             logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
 
-
-    @staticmethod
     def vreg_link_set(reg_id, data):
         if reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
             decimal = utils.convert_to_decimal(bytearray(data))
