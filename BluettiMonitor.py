@@ -54,7 +54,7 @@ class BluettiMonitorService:
         deviceinstance,
         paths,
         productname="Bluetti",
-        connection="MQTT",
+        connection="Bluetooth",
         config=None,
     ):
 
@@ -64,6 +64,8 @@ class BluettiMonitorService:
         self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 12.8, 0, 0, 0)
         logging.debug("* * * MAC %s", self.bluetti.mac)
         logging.debug("* * * TYPE %s", self.bluetti.type)
+
+        self._data_lock = threading.Lock()
 
         # dbus service
         self._dbusservice = VeDbusService(servicename, register=False)
@@ -110,6 +112,12 @@ class BluettiMonitorService:
             )
 
         self._dbusservice.register()
+
+        # Avviamo il thread di lettura in background
+        self._stop_thread = False
+        self._thread = threading.Thread(target=self._background_reader, daemon=True)
+        self._thread.start()
+
         GLib.timeout_add(1000, self._update)
 
     def _update(self):
