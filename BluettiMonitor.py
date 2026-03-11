@@ -185,7 +185,9 @@ class BluettiMonitorService:
                 elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
                     self.bluetti.voltage = 10.0
 
-                self._dbusservice["/Capacity"] = self.calculate_capacity(self.bluetti.voltage)
+
+                capacityAh = self.calculate_capacity(self.bluetti.voltage)
+                self._dbusservice["/Capacity"] = capacityAh
 
                 self.bluetti.last_update = datetime.now()
 
