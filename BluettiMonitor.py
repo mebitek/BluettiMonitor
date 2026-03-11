@@ -235,7 +235,7 @@ class BluettiMonitorService:
     def vreg_link_get(reg_id):
         if reg_id == BluettiReg.DC_MONITOR_MODE:
             return GenericReg.OK.value, [0xFE]
-        if reg_id == BluettiMonitor.VE_REG_BATTERY_CAPACITY:
+        if reg_id == BluettiMonitor.VE_REG_BAT_N_CAPACITY:
             return GenericReg.OK.value, [21]
         return GenericReg.OK.value, []
 
