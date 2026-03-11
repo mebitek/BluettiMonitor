@@ -83,7 +83,7 @@ class BluettiMonitorService:
         # Create the mandatory objects
         self._dbusservice.add_path("/DeviceInstance", deviceinstance)
         # value used in ac_sensor_bridge.cpp of dbus-cgwacs
-        self._dbusservice.add_path("/ProductId", 41859)
+        self._dbusservice.add_path("/ProductId", 0xA389)
         self._dbusservice.add_path("/ProductName", productname)
         self._dbusservice.add_path("/DeviceName", productname)
         self._dbusservice.add_path("/FirmwareVersion", 0x0419)
