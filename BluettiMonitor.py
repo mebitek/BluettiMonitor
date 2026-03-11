@@ -94,7 +94,7 @@ class BluettiMonitorService:
         self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
         self._dbusservice.add_path('/Devices/0/FirmwareVersion', 0x0419)
         self._dbusservice.add_path('/Devices/0/ProductId', 0xA383)
-        self._dbusservice.add_path('/Devices/0/ProductName', "productname")
+        self._dbusservice.add_path('/Devices/0/ProductName', productname)
         self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
         self._dbusservice.add_path('/Devices/0/Serial', config.get_serial())
         self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
@@ -271,7 +271,7 @@ def main():
             "/Dc/0/Temperature": {"initial": 0},
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
-            "/Capacity": {"initial": 21}
+            "/Capacity": {"initial": config.get_battery_capacity()}
 
         },
         config=config,
