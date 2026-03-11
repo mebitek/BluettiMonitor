@@ -185,9 +185,7 @@ class BluettiMonitorService:
                 elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
                     self.bluetti.voltage = 10.0
 
-                capacityWh = self.config.get_battery_capacity()
-                capacityAh = capacityWh / self.bluetti.voltage
-                self._dbusservice["/Capacity"] = capacityAh
+                self._dbusservice["/Capacity"] = self.calculate_capacity(self.bluetti.voltage)
 
                 self.bluetti.last_update = datetime.now()
 
@@ -242,7 +240,10 @@ class BluettiMonitorService:
         logging.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
 
-    @staticmethod
+    def calculate_capacity(self, voltage):
+        capacityWh = self.config.get_battery_capacity()
+        return capacityWh / voltage
+
     def vreg_link_get(self, reg_id):
         if reg_id == BluettiReg.DC_MONITOR_MODE.value:
             return GenericReg.OK.value, [0xFE]
@@ -304,9 +305,6 @@ def main():
     # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
     DBusGMainLoop(set_as_default=True)
 
-    capacityWh = config.get_battery_capacity()
-    capacityAh = capacityWh / 12.8
-
     pvac_output = BluettiMonitorService(
         servicename="com.victronenergy.battery.bluetti",
         deviceinstance=295,
@@ -316,7 +314,7 @@ def main():
             "/Dc/0/Power": {"initial": 0},
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
-            "/Capacity": {"initial": capacityWh},
+            "/Capacity": {"initial": self.calculate_capacity(12.8)},
             "/TimeToGo": {"initial": 0},
             "/ConsumedAmphours": {"initial": 0},
 
