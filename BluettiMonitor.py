@@ -273,6 +273,9 @@ class BluettiMonitorService:
 
     @staticmethod
     def vreg_link_set(reg_id, data):
+        if reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
+            decimal = utils.convert_to_decimal(bytearray(data))
+            self.config.write_to_config(decimal, "Setup", "BatteryCapacity")
         return GenericReg.OK.value, data
 
     def remaining_time_seconds(self, capacity, soc, current_a):
