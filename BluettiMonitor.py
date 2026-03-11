@@ -307,7 +307,7 @@ def main():
     # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
     DBusGMainLoop(set_as_default=True)
 
-    capacityAh = conf.get_battery_capacity() / 12.8
+    capacityAh = config.get_battery_capacity() / 12.8
 
     pvac_output = BluettiMonitorService(
         servicename="com.victronenergy.battery.bluetti",
