@@ -268,10 +268,11 @@ def main():
             "/Dc/0/Voltage": {"initial": 0},
             "/Dc/0/Current": {"initial": 0},
             "/Dc/0/Power": {"initial": 0},
-            "/Dc/0/Temperature": {"initial": 0},
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
-            "/Capacity": {"initial": config.get_battery_capacity()}
+            "/Capacity": {"initial": config.get_battery_capacity()},
+            "/ConsumedAmphours": {"initial": 0},
+            "/TimeToGo": {"initial": 0}
 
         },
         config=config,
