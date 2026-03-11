@@ -94,7 +94,7 @@ class BluettiMonitorService:
         self._dbusservice.add_path('/Devices/0/CustomName', productname)
         self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
         self._dbusservice.add_path('/Devices/0/FirmwareVersion', 0x0419)
-        self._dbusservice.add_path('/Devices/0/ProductId', 0xA383)
+        self._dbusservice.add_path('/Devices/0/ProductId', 0xA389)
         self._dbusservice.add_path('/Devices/0/ProductName', productname)
         self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
         self._dbusservice.add_path('/Devices/0/Serial', config.get_serial())
@@ -243,8 +243,10 @@ class BluettiMonitorService:
             return GenericReg.OK.value, utils.convert_decimal(battery_capacity)
         elif reg_id == BluettiReg.VE_REG_CHARGED_VOLTAGE.value:
             return GenericReg.OK.value, utils.convert_decimal(13.6)
+        else:
+            logging.debug("GET REG_ID %s" % regid)
+            return GenericReg.OK.value, []
 
-        return GenericReg.OK.value, []
 
     @staticmethod
     def vreg_link_set(reg_id, data):
