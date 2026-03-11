@@ -251,7 +251,7 @@ class BluettiMonitorService:
             return GenericReg.OK.value, utils.convert_decimal(0.98)
         elif reg_id == BluettiReg.VE_REG_CURRENT_THRESHOLD.value:
             return GenericReg.OK.value, utils.convert_decimal(0.1)
-        elif reg_id == BluettiReg.VE_REG_BAT_TAIL_CURRENT.value:
+        elif reg_id == BluettiReg.VE_REG_CHARGED_CURRENT.value:
             return GenericReg.OK.value, utils.convert_decimal(0.02)
         else:
             logging.debug("GET REG_ID %s" % regid)
