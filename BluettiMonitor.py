@@ -236,7 +236,7 @@ class BluettiMonitorService:
 
     @staticmethod
     def vreg_link_get(reg_id):
-        if reg_id == BluettiReg.DC_MONITOR_MODE:
+        if reg_id == BluettiReg.DC_MONITOR_MODE.value:
             return GenericReg.OK.value, [0xFE]
         elif reg_id == BluettiMonitor.VE_REG_BATTERY_CAPACITY.value:
             battery_capacity = float(self.config.get_battery_capacity())
@@ -297,8 +297,6 @@ def main():
             "/Soc": {"initial": 0},
             "/UpdateIndex": {"initial": 0},
             "/Capacity": {"initial": config.get_battery_capacity()},
-            "/ConsumedAmphours": {"initial": 0},
-            "/TimeToGo": {"initial": 0},
             "/Settings/MonitorMode": {"initial": 0},
 
         },
