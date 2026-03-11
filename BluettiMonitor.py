@@ -300,7 +300,6 @@ def main():
             "/ConsumedAmphours": {"initial": 0},
             "/TimeToGo": {"initial": 0},
             "/Settings/MonitorMode": {"initial": 0},
-            "/Dc/Battery/Capacity": {"initial": config.get_battery_capacity()}
 
         },
         config=config,
