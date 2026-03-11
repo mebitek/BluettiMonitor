@@ -187,7 +187,7 @@ class BluettiMonitorService:
 
                 if self.bluetti.soc < self.config.get_low_soc_alarm_set():
                     self._dbusservice["/Alarms/LowSoc"] = 1
-                if self.bluetti.soc > self.config.get_low_soc_alarm_clear():
+                if self.bluetti.soc > self.config.get_low_soc_alarm_cleari():
                     self._dbusservice["/Alarms/LowSoc"] = 0
 
 
