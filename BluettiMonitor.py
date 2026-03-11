@@ -296,6 +296,8 @@ def main():
             "/Capacity": {"initial": config.get_battery_capacity()},
             "/ConsumedAmphours": {"initial": 0},
             "/TimeToGo": {"initial": 0}
+            '/Settings/DeviceFunction': {'initial': 0},
+            '/Settings/MonitorMode': {'initial': -2},
 
         },
         config=config,
