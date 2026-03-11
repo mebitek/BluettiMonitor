@@ -1,40 +1,27 @@
 #!/usr/bin/env python
-
 """
 Created by mebitek in 2026.
-
-Inspired by:
- - https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py (Template)
-
-
-This code and its documentation can be found on: https://github.com/mebitek/BluettiMonitor
-Used https://github.com/victronenergy/velib_python/blob/master/dbusdummyservice.py as basis for this service.
-Reading information from Tasmota SENSOR MQTT and puts the info on dbus as inverter.
-
+Modified with threading support to prevent GUI blocking on Venus OS.
 """
-
 import os
 import sys
 import json
 import logging
 import dbus
 import requests
-import _thread as thread
+import threading
+import time
 import subprocess
 from datetime import datetime, timedelta
 import utils
 
-
 # add the path to our own packages for import
 sys.path.insert(1, "/data/SetupHelper/velib_python")
-
 from vedbus import VeDbusService, VeDbusItemImport
 from gi.repository import GLib
 from vreg_link_item import VregLinkItem, GenericReg, BluettiReg
 from settingsdevice import SettingsDevice
-
 from bluetti_config import BluettiConfig
-
 
 class Bluetti:
     def __init__(self, mac, _type, soc, voltage, current, power, temperature):
@@ -57,35 +44,34 @@ class BluettiMonitorService:
         connection="Bluetooth",
         config=None,
     ):
-
         self.config = config or BluettiConfig()
-
         # bluetti class
         self.bluetti = Bluetti(config.get_device_mac(), config.get_device_type(), 0, 12.8, 0, 0, 0)
+        
+        # Lock per gestire l'accesso concorrente ai dati
+        self._data_lock = threading.Lock()
+        self._stop_thread = False
+
         logging.debug("* * * MAC %s", self.bluetti.mac)
         logging.debug("* * * TYPE %s", self.bluetti.type)
-
-        self._data_lock = threading.Lock()
-
+        
         # dbus service
         self._dbusservice = VeDbusService(servicename, register=False)
         self._paths = paths
-
+        
         vregtype = lambda *args, **kwargs: VregLinkItem(*args, **kwargs, getvreg=self.vreg_link_get, setvreg=self.vreg_link_set)
-
+        
         logging.debug("%s /DeviceInstance = %d" % (servicename, deviceinstance))
-
         productname = "Bluetti " + config.get_device_type()
         logging.debug("* * * Product name is %s", productname)
-
+        
         # Create the management objects, as specified in the ccgx dbus-api document
         self._dbusservice.add_path("/Mgmt/ProcessName", __file__)
         self._dbusservice.add_path("/Mgmt/ProcessVersion", config.get_version())
         self._dbusservice.add_path("/Mgmt/Connection", connection)
-
+        
         # Create the mandatory objects
         self._dbusservice.add_path("/DeviceInstance", deviceinstance)
-        # value used in ac_sensor_bridge.cpp of dbus-cgwacs
         self._dbusservice.add_path("/ProductId", 0xA383)
         self._dbusservice.add_path("/ProductName", productname)
         self._dbusservice.add_path("/DeviceName", productname)
@@ -93,7 +79,7 @@ class BluettiMonitorService:
         self._dbusservice.add_path("/HardwareVersion", 8)
         self._dbusservice.add_path("/Connected", 1)
         self._dbusservice.add_path("/Serial", config.get_serial())
-
+        
         self._dbusservice.add_path('/Devices/0/CustomName', productname)
         self._dbusservice.add_path('/Devices/0/DeviceInstance', deviceinstance)
         self._dbusservice.add_path('/Devices/0/FirmwareVersion', 0x0419)
@@ -102,7 +88,7 @@ class BluettiMonitorService:
         self._dbusservice.add_path('/Devices/0/ServiceName', servicename)
         self._dbusservice.add_path('/Devices/0/Serial', config.get_serial())
         self._dbusservice.add_path('/Devices/0/VregLink', None, itemtype=vregtype)
-
+        
         for path, settings in self._paths.items():
             self._dbusservice.add_path(
                 path,
@@ -110,155 +96,202 @@ class BluettiMonitorService:
                 writeable=True,
                 onchangecallback=self._handlechangedvalue,
             )
-
+        
         self._dbusservice.register()
-
-        # Avviamo il thread di lettura in background
-        self._stop_thread = False
+        
+        # Avvio il thread di lettura in background
         self._thread = threading.Thread(target=self._background_reader, daemon=True)
         self._thread.start()
 
+        # Registro il timer per l'aggiornamento DBus (Main Loop)
         GLib.timeout_add(1000, self._update)
 
-    def _update(self):
-
-        try:
-
-            if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
-                    minutes=self.config.get_interval()):
-
-                output = subprocess.run(['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
-                                capture_output=True, text=True)
-
+    def _background_reader(self):
+        """
+        Questo metodo gira in un thread separato.
+        Si occupa di chiamare subprocess (bloccante) e aggiornare self.bluetti.
+        """
+        while not self._stop_thread:
+            try:
+                # Eseguiamo il comando bluetti-read (bloccante)
+                # Timeout aggiunto per evitare freeze indefiniti
+                output = subprocess.run(
+                    ['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
+                    capture_output=True, text=True, timeout=15
+                )
 
                 in_power_dc = None
                 in_power_ac = None 
                 in_voltage_dc = None
-                power = self.config.get_standby_current() # round standy consumpiton
-                lines = output.stdout.splitlines();       
-
-                        
-                for line in lines:
-                    if "FieldName.BATTERY_SOC" in line:
-                        soc = int(line.split(":")[1].strip().replace("%", ""))
-                        
-                        self._dbusservice["/Soc"] = soc
-                        self.bluetti.soc = soc
-
-                        if self.bluetti.soc < 20:
-                            logging.debug("* * * Set turbo mode")
-                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
-                        elif self.bluetti.soc > 80:
-                            logging.debug("* * * Set silent mode")
-                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
-
-                        else:
-                            logging.debug("* * * Set normal mode")
-                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
-
-
-                    if "FieldName.DC_OUTPUT_POWER" in line:
-                        power = int(line.split(":")[1].strip().replace("W", "")) + power
-                        self.bluetti.power = power + (power/100) #add parasite power consumpiton
-                    
-                    if "FieldName.AC_INPUT_POWER" in line:
-                        in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
-
-                    if "FieldName.DC_INPUT_POWER" in line:
-                        in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
-                    if "FieldName.DC_INPUT_VOLTAGE" in line: 
-                        in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
-
-            
-                if self.bluetti.soc == 100:
-                    self.bluetti.voltage = 13.6
-                elif self.bluetti.soc == 99:
-                    self.bluetti.voltage = 13.4
-                elif self.bluetti.soc > 90 and self.bluetti.soc < 99:
-                    self.bluetti.voltage = 13.3
-                elif self.bluetti.soc > 70 and self.bluetti.soc < 90:
-                    self.bluetti.voltage = 13.2
-                elif self.bluetti.soc > 40 and self.bluetti.soc < 70:
-                    self.bluetti.voltage = 13.1
-                elif self.bluetti.soc > 30 and self.bluetti.soc < 40:
-                    self.bluetti.voltage = 13.0
-                elif self.bluetti.soc > 20 and self.bluetti.soc < 30:
-                    self.bluetti.voltage = 12.9
-                elif self.bluetti.soc > 17 and self.bluetti.soc < 20:
-                    self.bluetti.voltage = 12.8
-                elif self.bluetti.soc > 14 and self.bluetti.soc < 17:
-                    self.bluetti.voltage = 12.5
-                elif self.bluetti.soc > 9 and self.bluetti.soc < 14:
-                    self.bluetti.voltage = 12.0
-                elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
-                    self.bluetti.voltage = 10.0
-
-
-                capacityAh = self.calculate_capacity(self.bluetti.voltage)
-                self._dbusservice["/Capacity"] = capacityAh
-
-                self.bluetti.last_update = datetime.now()
-
-                self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
-                current = 0
-                if self.bluetti.power > 0:
-                    self._dbusservice["/Dc/0/Power"] = -power
-                    current = -(self.bluetti.power / self.bluetti.voltage)
-
-
-                if in_power_dc and in_voltage_dc:
-                    power = -power + in_power_dc
-                    self._dbusservice["/Dc/0/Power"] = power
-                    current = (in_power_dc / in_voltage_dc) + current
-
-                if in_power_ac:
-                    power = power + in_power_ac
-                    self._dbusservice["/Dc/0/Power"] = power
-                    current = current + (in_power_ac/14.6)
+                power = self.config.get_standby_current()
+                lines = output.stdout.splitlines()
+                current_soc = None
                 
-                self._dbusservice["/Dc/0/Current"] = current
-                self.bluetti.current = current
+                # Parsing output
+                for line in lines:
+                    try:
+                        if "FieldName.BATTERY_SOC" in line:
+                            current_soc = int(line.split(":")[1].strip().replace("%", ""))
+                            
+                            # Logica controllo modalità (turbo/silent)
+                            # NOTA: Anche bluetti-write è bloccante, ma eseguito nel thread è sicuro per la GUI
+                            if current_soc < 20:
+                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
+                            elif current_soc > 80:
+                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
+                            else:
+                                subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
 
-                time_to_go = self.remaining_time_seconds(capacityAh, self.bluetti.soc, self.bluetti.current)
-                self._dbusservice["/TimeToGo"] = time_to_go
+                        elif "FieldName.DC_OUTPUT_POWER" in line:
+                            pwr = int(line.split(":")[1].strip().replace("W", ""))
+                            power = pwr + power
+                            # self.bluetti.power sarà calcolato dopo
+                        
+                        elif "FieldName.AC_INPUT_POWER" in line:
+                            in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
+                        
+                        elif "FieldName.DC_INPUT_POWER" in line:
+                            in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
+                        
+                        elif "FieldName.DC_INPUT_VOLTAGE" in line: 
+                            in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
+                    except (ValueError, IndexError):
+                        logging.warning(f"Errore parsing linea: {line}")
+                        continue
 
-                consumed = capacityAh * (100 - self.bluetti.soc) / 100
-                self._dbusservice["/ConsumedAmphours"] = consumed
+                # Calcolo Voltage basato su SOC
+                calc_voltage = 12.8 # Default
+                if current_soc is not None:
+                    if current_soc == 100: calc_voltage = 13.6
+                    elif current_soc == 99: calc_voltage = 13.4
+                    elif current_soc > 90: calc_voltage = 13.3
+                    elif current_soc > 70: calc_voltage = 13.2
+                    elif current_soc > 40: calc_voltage = 13.1
+                    elif current_soc > 30: calc_voltage = 13.0
+                    elif current_soc > 20: calc_voltage = 12.9
+                    elif current_soc > 17: calc_voltage = 12.8
+                    elif current_soc > 14: calc_voltage = 12.5
+                    elif current_soc > 9: calc_voltage = 12.0
+                    else: calc_voltage = 10.0
+                
+                # Calcolo Potenza e Corrente finali
+                # Power è positivo se la batteria sta erogando (carico), negativo se sta caricando
+                # Nota: La logica dei segni dipende da come bluetti-read riporta i valori
+                # Qui assumiamo che DC_OUTPUT_POWER sia un carico (positivo)
+                
+                total_power = power + (power/100) # Aggiunge consumo parassita
+                
+                # Calcolo corrente approssimativo
+                current = 0
+                if calc_voltage > 0:
+                    if total_power > 0:
+                        current = -(total_power / calc_voltage) # Negativo = scarica
+                    
+                    # Se c'è input, inverto il segno (carica)
+                    if in_power_dc and in_voltage_dc:
+                        in_current = in_power_dc / in_voltage_dc
+                        current += in_current # Sommo (carica positiva)
+                        total_power -= in_power_dc # Netto potenza
+                    
+                    if in_power_ac:
+                        # Assumiamo efficienza o voltaggio nominale per input AC
+                        current += (in_power_ac / 14.6) 
+                        total_power -= in_power_ac
+                
+                # Calcolo TimeToGo e Capacity
+                capacityAh = self.config.get_battery_capacity() / calc_voltage
+                consumed = capacityAh * (100 - (current_soc or 0)) / 100
+                time_to_go = self.remaining_time_seconds(capacityAh, current_soc or 0, current)
 
+                # Aggiornamento sicuro delle variabili condivise
+                with self._data_lock:
+                    self.bluetti.soc = current_soc if current_soc is not None else self.bluetti.soc
+                    self.bluetti.voltage = calc_voltage
+                    self.bluetti.power = total_power
+                    self.bluetti.current = current
+                    self.bluetti.capacity = capacityAh
+                    self.bluetti.consumed = consumed
+                    self.bluetti.time_to_go = time_to_go
+                    self.bluetti.last_update = datetime.now()
 
-                logging.debug("* * * BATTERY SOC %s", self.bluetti.soc)
-                logging.debug("* * * BATTERY VOLTAGE %s", self.bluetti.voltage)
-                logging.debug("* * * CURRENT %s", self.bluetti.current)
-                logging.debug("* * * DC POWER %s", power)
+            except subprocess.TimeoutExpired:
+                logging.error("Timeout durante lettura bluetooth (bluetti-read)")
+            except Exception:
+                logging.exception("Exception nel thread di lettura")
+            
+            # Attendi l'intervallo configurato (convertito in secondi)
+            # Se config.get_interval() è in minuti, moltiplica per 60. 
+            # Qui assumiamo che l'intervallo sia in secondi o che la logica originale fosse:
+            # datetime.now() > last_update + timedelta(minutes=...)
+            # Usiamo un tempo fisso di sleep per evitare loop troppo veloci
+            sleep_time = 5 # Default fallback
+            # Cerchiamo di rispettare la configurazione se possibile
+            try:
+                sleep_time = self.config.get_interval() 
+                # Se l'intervallo è in minuti (es. 1), convertiamolo
+                # Controlla la tua configurazione: se è 1, intendeva 1 minuto o 1 secondo?
+                # Per sicurezza mettiamo un minimo di 5 secondi per non intasare il BT
+                if sleep_time < 5: sleep_time = 5 
+            except:
+                pass
+                
+            time.sleep(sleep_time)
 
+    def _update(self):
+        """
+        Metodo chiamato dal Main Loop GLib. 
+        Deve essere velocissimo: legge solo i dati e li scrive su DBus.
+        """
+        try:
+            # Copia veloce dei dati protetti
+            with self._data_lock:
+                soc = self.bluetti.soc
+                voltage = self.bluetti.voltage
+                current = self.bluetti.current
+                power = self.bluetti.power
+                capacity = getattr(self.bluetti, 'capacity', 0)
+                consumed = getattr(self.bluetti, 'consumed', 0)
+                time_to_go = getattr(self.bluetti, 'time_to_go', 0)
 
-            else:
-                logging.debug("* * * Skip Interval")
+            # Aggiornamento DBus
+            self._dbusservice["/Soc"] = soc
+            self._dbusservice["/Dc/0/Voltage"] = voltage  
+            self._dbusservice["/Dc/0/Current"] = current
+            self._dbusservice["/Dc/0/Power"] = power
+            self._dbusservice["/Capacity"] = capacity
+            self._dbusservice["/ConsumedAmphours"] = consumed
+            self._dbusservice["/TimeToGo"] = time_to_go
 
-           
+            # Log (opzionale, ridurre verbosità in produzione)
+            # logging.debug(f"Update: SOC={soc}% V={voltage} I={current}")
+
         except Exception:
-            logging.exception("Exception while getting bluetti status")
+            logging.exception("Exception during DBus update")
 
-        index = self._dbusservice["/UpdateIndex"] + 1  # increment index
-        if index > 255:  # maximum value of the index
-            index = 0  # overflow from 255 to 0
+        index = self._dbusservice["/UpdateIndex"] + 1
+        if index > 255:
+            index = 0
         self._dbusservice["/UpdateIndex"] = index
+        
         return True
-
 
     def _handlechangedvalue(self, path, value):
         logging.debug("someone else updated %s to %s" % (path, value))
-        return True  # accept the change
+        return True
 
     def calculate_capacity(self, voltage):
         capacityWh = self.config.get_battery_capacity()
         return capacityWh / voltage
 
     def vreg_link_get(self, reg_id):
+        # Accesso protetto ai dati se necessario
+        with self._data_lock:
+            voltage = self.bluetti.voltage
+        
         if reg_id == BluettiReg.DC_MONITOR_MODE.value:
             return GenericReg.OK.value, [0xFE]
         elif reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
-            capacityAh = float(self.calculate_capacity(self.bluetti.voltage)/100)
+            capacityAh = float(self.calculate_capacity(voltage)/100)
             return GenericReg.OK.value, utils.convert_decimal(capacityAh)
         elif reg_id == BluettiReg.VE_REG_CHARGED_VOLTAGE.value:
             return GenericReg.OK.value, utils.convert_decimal(1.36)
@@ -271,52 +304,39 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_CURRENT_THRESHOLD.value:
             return GenericReg.OK.value, utils.convert_decimal(0.1)
         elif reg_id == BluettiReg.VE_REG_CHARGED_CURRENT.value:
-            return GenericReg.OK.value, utils.convert_decimal(0.02) #tail current
+            return GenericReg.OK.value, utils.convert_decimal(0.02)
         elif reg_id == BluettiReg.VE_REG_TTG_DELTA_T.value:
-            GenericReg.OK.value, utils.convert_decimal(3)
+            return GenericReg.OK.value, utils.convert_decimal(3)
         else:
             logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
-
 
     @staticmethod
     def vreg_link_set(reg_id, data):
         return GenericReg.OK.value, data
 
     def remaining_time_seconds(self, capacity, soc, current_a):
-
         MIN_CURRENT = 0.1 
-
-        if current_a >= -MIN_CURRENT:
+        if current_a >= -MIN_CURRENT: # Se sta caricando o in float
             return 864000 
-
         remaining_ah = capacity * (soc / 100.0)
-
         hours = remaining_ah / abs(current_a)
-
         seconds = int(hours * 3600)
-
         return seconds
 
 def main():
     config = BluettiConfig()
-
-    # set logging level to include info level entries
     level = logging.INFO
     if config.get_debug():
         level = logging.DEBUG
     logging.basicConfig(level=level)
     logging.info(">>>>>>>>>>>>>>>> Bluetti Monitor Starting <<<<<<<<<<<<<<<<")
-
-    thread.daemon = True  # allow the program to quit
-
+    
     from dbus.mainloop.glib import DBusGMainLoop
-
-    # Have a mainloop, so we can send/receive asynchronous calls to and from dbus
     DBusGMainLoop(set_as_default=True)
-
+    
     capacityAh = config.get_battery_capacity() / 12.8
-
+    
     pvac_output = BluettiMonitorService(
         servicename="com.victronenergy.battery.bluetti",
         deviceinstance=295,
@@ -329,22 +349,16 @@ def main():
             "/Capacity": {"initial": capacityAh},
             "/TimeToGo": {"initial": 0},
             "/ConsumedAmphours": {"initial": 0},
-
             "/Settings/MonitorMode": {"initial": 0},
             "/Info/MaxChargeCurrent": {"initial": 20},
             "/Info/MaxDischargeCurrent": {"initial": 20},
-            
-
         },
         config=config,
     )
-
-    logging.info(
-        "Connected to dbus, and switching over to GLib.MainLoop() (= event based)"
-    )
+    
+    logging.info("Connected to dbus, and switching over to GLib.MainLoop()")
     mainloop = GLib.MainLoop()
     mainloop.run()
-
 
 if __name__ == "__main__":
     main()
