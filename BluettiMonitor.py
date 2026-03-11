@@ -242,13 +242,13 @@ class BluettiMonitorService:
             battery_capacity = float(self.config.get_battery_capacity())
             return GenericReg.OK.value, utils.convert_decimal(battery_capacity)
         elif reg_id == BluettiReg.VE_REG_CHARGED_VOLTAGE.value:
-            return GenericReg.OK.value, utils.convert_decimal(13.6)
+            return GenericReg.OK.value, utils.convert_decimal(1.36)
         elif reg_id == BluettiReg.VE_REG_PEUKERT_COEFFICIENT.value:
             return GenericReg.OK.value, utils.convert_decimal(1.01)
         elif reg_id == BluettiReg.VE_REG_CHARGE_DETECTION_TIME.value:
-            return GenericReg.OK.value, utils.convert_decimal(3)
+            return GenericReg.OK.value, utils.convert_decimal(0.03)
         elif reg_id == BluettiReg.VE_REG_CHARGE_EFFICIENCY.value:
-            return GenericReg.OK.value, utils.convert_decimal(98)
+            return GenericReg.OK.value, utils.convert_decimal(0.09)
         else:
             logging.debug("GET REG_ID %s" % regid)
             return GenericReg.OK.value, []
