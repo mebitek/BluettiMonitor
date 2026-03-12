@@ -45,6 +45,7 @@ class Bluetti:
         self.power = power
         self.temperature = temperature
         self.soc = soc
+        self.hist_last_discharge = None
         self.last_update = None
 
 class BluettiMonitorService:
@@ -246,6 +247,7 @@ class BluettiMonitorService:
                 self._dbusservice["/ConsumedAmphours"] = consumed
                 if consumed > 0:
                     self._dbusservice["/History/LastDischarge"] = consumed
+                    self.bluetti.hist_last_discharge = consumed
                 #     deepest_discharge = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/DeepestDischarge')
                 #     if deepest_discharge.get_value() and deepest_discharge.get_value() < consumed:
                 #         self._dbusservice["/History/DeepestDischarge"] = consumed
@@ -305,6 +307,9 @@ class BluettiMonitorService:
             return GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_set())
         elif reg_id == BluettiReg.VE_REG_LOW_SOC_CLEAR.value:
             return GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_clear())
+        elif reg_id == BluettiReg.VE_REG_HIST_LAST_DISCHARGE.value:
+            return GenericReg.OK.value, utils.convert_decimal(self.bluetti.hist_last_discharge)
+
         else:
             logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
