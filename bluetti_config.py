@@ -39,15 +39,8 @@ class BluettiConfig:
     def get_standby_current(self):
         return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
 
-    def get_dc_low_load_always_on(self):
-        val = self.config.get("Setup", "DcLowLoadAlwaysOn", fallback="true")
-        if val == "true":
-            return True
-        else:
-            return False
-
     def get_fix_quantize_power(self):
-        return float(self.config.get("Setup", "FixQuantizePower", fallback=5.5)) 
+        return float(self.config.get("Setup", "FixQuantizePower", fallback=5)) 
 
     def get_battery_capacity(self):
         return float(self.config.get("Setup", "BatteryCapacity", fallback=268.8)) 

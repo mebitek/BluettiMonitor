@@ -150,13 +150,10 @@ class BluettiMonitorService:
 
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
-                        bt_power = int(line.split(":")[1].strip().replace("W", ""))
-                        if bt_power == 0:
-                            fix_power = self.config.get_fix_quantize_power()
-                            power = bt_power + power + fix_power
-                        else:
-                            power = bt_power + power
-                        self.bluetti.power = power + (power/100) #add parasite power consumpfix_poweriton
+                        power = int(line.split(":")[1].strip().replace("W", "")) + power
+                        if power <= 5:
+                            power = power + self.config.get_fix_quantize_power()
+                        self.bluetti.power = power + (power/100) #add parasite power consumpiton
                     
                     if "FieldName.AC_INPUT_POWER" in line:
                         in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
