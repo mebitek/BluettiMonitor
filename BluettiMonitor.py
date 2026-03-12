@@ -151,7 +151,7 @@ class BluettiMonitorService:
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         bt_power = int(line.split(":")[1].strip().replace("W", ""))
-                        if bt_power == 0 and self.config.get_dc_low_load_always_on():
+                        if bt_power == 0:
                             fix_power = self.config.get_fix_quantize_power()
                             power = bt_power + power + fix_power
                         else:
