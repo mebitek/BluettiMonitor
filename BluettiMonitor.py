@@ -150,7 +150,12 @@ class BluettiMonitorService:
 
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
-                        power = int(line.split(":")[1].strip().replace("W", "")) + power
+                        bt_power = int(line.split(":")[1].strip().replace("W", ""))
+                        if bt_power == 0 and self.config.get_dc_low_load_always_on():
+                            fix_power = self.config.get_fix_quantize_power()
+                            power = bt_power + power + fix_power
+                        else:
+                            power = int(line.split(":")[1].strip().replace("W", "")) + power
                         self.bluetti.power = power + (power/100) #add parasite power consumpiton
                     
                     if "FieldName.AC_INPUT_POWER" in line:
