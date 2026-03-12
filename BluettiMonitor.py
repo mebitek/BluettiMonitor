@@ -129,25 +129,13 @@ class BluettiMonitorService:
                 standby_power = self.config.get_standby_current() # round standy consumpiton
                 lines = output.stdout.splitlines()    
 
-                        
+                actual_chargin_mode = False
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
                         
                         self._dbusservice["/Soc"] = soc
                         self.bluetti.soc = soc
-
-                        if self.bluetti.soc < 20:
-                            logging.debug("* * * Set turbo mode")
-                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
-                        elif self.bluetti.soc > 80:
-                            logging.debug("* * * Set silent mode")
-                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
-
-                        else:
-                            logging.debug("* * * Set normal mode")
-                            subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
-
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         bt_power = int(line.split(":")[1].strip().replace("W", ""))
@@ -164,6 +152,20 @@ class BluettiMonitorService:
                         in_power_dc = int(line.split(":")[1].strip().replace("W", ""))
                     if "FieldName.DC_INPUT_VOLTAGE" in line: 
                         in_voltage_dc = float(line.split(":")[1].strip().replace("V", ""))
+                    if "FieldName.CTRL_CHARGING_MODE" in line:
+                        actual_chargin_mode = line.split(":")[1].strip()
+
+
+
+                if self.bluetti.soc < 20 and actual_chargin_mode != 'ChargingMode.TURBO':
+                    logging.debug("* * * Set turbo mode")
+                    subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '2', 'ctrl_charging_mode'])
+                elif self.bluetti.soc > 80 and actual_chargin_mode != 'ChargingMode.SILENT':
+                    logging.debug("* * * Set silent mode")
+                    subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '1', 'ctrl_charging_mode'])
+                elif self.bluetti.soc >= 20 and self.bluetti.soc <=80 and actual_chargin_mode != 'ChargingMode.STANDARD':
+                    logging.debug("* * * Set normal mode")
+                    subprocess.run(['bluetti-write', '-m', self.bluetti.mac, "-t", self.bluetti.type, '-v', '0', 'ctrl_charging_mode'])
 
             
                 if self.bluetti.soc == 100:
