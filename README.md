@@ -11,13 +11,13 @@ you need to install via pip the `bluetti-bt-lib`
 
 * #### Manual
     see `config.ini` and amend for your needs.
-    - `mac`: bluetooth mac address
-    - `type`: bluetti device
-    - `serial`: device serial 
-    - `interval`: interval to query the bluetti
-    - `standbycurrent`: current auto consumed by bluetti
+    - `Mac`: bluetooth mac address
+    - `Type`: bluetti device
+    - `Serial`: device serial 
+    - `Interval`: interval to query the bluetti
+    - `StandbyCurrent`: current auto consumed by bluetti
     - `FixQuantizePower`: power used as fix for wrong quantization under 5w
-    - `batterycapacity`: battery capacity in wh
+    - `BatteryCapacity`: battery capacity in wh
     - `debug`: set log level to debug
 
 ### Installation
