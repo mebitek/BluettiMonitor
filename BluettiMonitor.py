@@ -23,7 +23,7 @@ import _thread as thread
 import subprocess
 from datetime import datetime, timedelta
 import utils
-
+import random
 
 # add the path to our own packages for import
 sys.path.insert(1, "/data/SetupHelper/velib_python")
@@ -153,6 +153,7 @@ class BluettiMonitorService:
                         bt_power = int(line.split(":")[1].strip().replace("W", ""))
                         if bt_power <= 5:
                             power = bt_power + self.config.get_fix_quantize_power()
+                            power = power + self.add_power_jitter(power)
                         power = power + standby_power
                         self.bluetti.power = power + (power/100) #add parasite power consumpiton
                     
@@ -249,6 +250,10 @@ class BluettiMonitorService:
     def _handlechangedvalue(self, path, value):
         logging.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
+
+    def add_power_jitter(base_power):
+        jitter = random.uniform(-0.03, 0.03)  # ±3%
+        return base_power * (1 + jitter)
 
     def calculate_capacity(self, voltage):
         capacityWh = self.config.get_battery_capacity()
