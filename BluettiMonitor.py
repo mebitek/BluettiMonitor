@@ -235,7 +235,7 @@ class BluettiMonitorService:
                 if consumed > 0:
                     self._dbusservice["/History/LastDischarge"] = consumed
                     deepest_discharge = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/DeepestDischarge')
-                    if deepest_discharge.get_value() < consumed:
+                    if deepest_discharge.get_value() and deepest_discharge.get_value() < consumed:
                         self._dbusservice["/History/DeepestDischarge"] = consumed
 
 
