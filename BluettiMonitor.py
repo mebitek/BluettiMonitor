@@ -54,7 +54,7 @@ class BluettiMonitorService:
         deviceinstance,
         paths,
         productname="Bluetti",
-        connection="MQTT",
+        connection="Bluetooth",
         config=None,
     ):
 
