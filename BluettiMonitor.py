@@ -282,9 +282,9 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_CHARGED_CURRENT.value:
             return GenericReg.OK.value, utils.convert_decimal(0.02) #tail current
         elif reg_id == BluettiReg.VE_REG_LOW_SOC.value:
-            GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_set())
+            return GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_set())
         elif reg_id == BluettiReg.VE_REG_LOW_SOC_CLEAR.value:
-            GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_clear())
+            return GenericReg.OK.value, utils.convert_decimal(self.config.get_low_soc_alarm_clear())
         else:
             logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
