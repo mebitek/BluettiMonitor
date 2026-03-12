@@ -47,7 +47,7 @@ class BluettiConfig:
             return False
 
     def get_fix_quantize_power(self):
-        return float(self.config.get("Setup", "FixQuantizePower", fallback=5)) 
+        return float(self.config.get("Setup", "FixQuantizePower", fallback=5.5)) 
 
     def get_battery_capacity(self):
         return float(self.config.get("Setup", "BatteryCapacity", fallback=268.8)) 

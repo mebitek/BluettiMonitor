@@ -155,8 +155,8 @@ class BluettiMonitorService:
                             fix_power = self.config.get_fix_quantize_power()
                             power = bt_power + power + fix_power
                         else:
-                            power = int(line.split(":")[1].strip().replace("W", "")) + power
-                        self.bluetti.power = power + (power/100) #add parasite power consumpiton
+                            power = bt_power + power
+                        self.bluetti.power = power + (power/100) #add parasite power consumpfix_poweriton
                     
                     if "FieldName.AC_INPUT_POWER" in line:
                         in_power_ac = int(line.split(":")[1].strip().replace("W", ""))
