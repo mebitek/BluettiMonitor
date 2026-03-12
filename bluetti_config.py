@@ -40,7 +40,7 @@ class BluettiConfig:
         return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
 
     def get_dc_low_load_always_on(self):
-        val = self.config.get("Setup", "DcLowLoadAlwaysOn", fallback=True)
+        val = self.config.get("Setup", "DcLowLoadAlwaysOn", fallback="true")
         if val == "true":
             return True
         else:
