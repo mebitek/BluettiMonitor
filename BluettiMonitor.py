@@ -153,7 +153,7 @@ class BluettiMonitorService:
                         bt_power = int(line.split(":")[1].strip().replace("W", ""))
                         if bt_power <= 5:
                             power = bt_power + self.config.get_fix_quantize_power()
-                            power = power + self.add_power_jitter(power)
+                            power = self.add_power_jitter(power)
                         power = power + standby_power
                         self.bluetti.power = power + (power/100) #add parasite power consumpiton
                     
