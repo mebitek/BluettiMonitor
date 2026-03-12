@@ -251,7 +251,7 @@ class BluettiMonitorService:
         logging.debug("someone else updated %s to %s" % (path, value))
         return True  # accept the change
 
-    def add_power_jitter(base_power):
+    def add_power_jitter(self, base_power):
         jitter = random.uniform(-0.03, 0.03)  # ±3%
         return base_power * (1 + jitter)
 
