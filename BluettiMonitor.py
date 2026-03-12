@@ -208,6 +208,18 @@ class BluettiMonitorService:
                 self.bluetti.last_update = datetime.now()
 
                 self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
+                max_voltage = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/MaximumVoltage')
+                if not max_voltage.get_value():
+                    self._dbusservice["/History/MaximumVoltage"] = self.bluetti.voltage  
+                elif max_voltage.get_value() < self.bluetti.voltage:
+                    self._dbusservice["/History/MaximumVoltage"] = self.bluetti.voltage
+
+                min_voltage = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/MinimumVoltage')
+                if not min_voltage.get_value():
+                    self._dbusservice["/History/MinimumVoltage"] = self.bluetti.voltage
+                elif min_voltage.get_value() > self.bluetti.voltage:
+                    self._dbusservice["/History/MinimumVoltage"] = self.bluetti.voltage
+
                 current = 0
                 if self.bluetti.power > 0:
                     self._dbusservice["/Dc/0/Power"] = -self.bluetti.power
