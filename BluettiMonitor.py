@@ -128,6 +128,7 @@ class BluettiMonitorService:
                 in_voltage_dc = None
                 standby_power = self.config.get_standby_current() # round standy consumpiton
                 lines = output.stdout.splitlines()    
+                power = 0
 
                 actual_chargin_mode = False
                 for line in lines:
@@ -287,7 +288,7 @@ class BluettiMonitorService:
             logging.debug("GET REG_ID %s" % reg_id)
             return GenericReg.OK.value, []
 
-    def vreg_link_set(reg_id, data):
+    def vreg_link_set(self, reg_id, data):
         if reg_id == BluettiReg.VE_REG_BATTERY_CAPACITY.value:
             decimal = utils.convert_to_decimal(bytearray(data))
             self.config.write_to_config(decimal, "Setup", "BatteryCapacity")
