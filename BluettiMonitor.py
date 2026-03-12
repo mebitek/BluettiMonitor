@@ -304,7 +304,7 @@ class BluettiMonitorService:
         elif reg_id == BluettiReg.VE_REG_CHARGED_CURRENT.value:
             return GenericReg.OK.value, utils.convert_decimal(0.02) #tail current
         elif reg_id == BluettiReg.VE_REG_LOW_SOC.value:
-            return GenericReg.OK.value, utils.convert_decimal(0.1) #discharge threshold
+            return GenericReg.OK.value, utils.convert_decimal(1) #discharge threshold
         elif reg_id == BluettiReg.VE_REG_HIST_LAST_DISCHARGE.value:
             return GenericReg.OK.value, utils.convert_decimal(self.bluetti.hist_last_discharge)
 
