@@ -349,7 +349,26 @@ def main():
             "/ConsumedAmphours": {"initial": 0},
 
             "/Settings/MonitorMode": {"initial": 0},
-            "/Alarms/LowSoc": {"initial": 0},            
+            "/Alarms/LowSoc": {"initial": 0}, 
+
+            "/History/DeepestDischarge": {"initial": 0}, 
+            "/History/LastDischarge": {"initial": 0}, 
+            "/History/AverageDischarge": {"initial": 0}, 
+            "/History/ChargeCycles": {"initial": 0}, 
+            "/History/FullDischarges": {"initial": 0}, 
+            "/History/TotalAhDrawn": {"initial": 0}, 
+            "/History/MinimumVoltage": {"initial": 0}, 
+            "/History/MaximumVoltage": {"initial": 0}, 
+            "/History/TimeSinceLastFullCharge": {"initial": 0}, 
+            "/History/AutomaticSyncs": {"initial": 0}, 
+            "/History/LowVoltageAlarms": {"initial": 0}, 
+            "/History/HighVoltageAlarms": {"initial": 0}, 
+            "/History/LowStarterVoltageAlarms": {"initial": 0}, 
+            "/History/HighStarterVoltageAlarms": {"initial": 0}, 
+            "/History/MinimumStarterVoltage": {"initial": 0}, 
+            "/History/MaximumStarterVoltage": {"initial": 0}, 
+            "/History/DischargedEnergy": {"initial": 0}, 
+            "/History/ChargedEnergy ": {"initial": 0}
 
         },
         config=config,
