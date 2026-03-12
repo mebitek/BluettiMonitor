@@ -119,6 +119,9 @@ class BluettiMonitorService:
             if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
                     minutes=self.config.get_interval()):
 
+                dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
+
+
                 output = subprocess.run(['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
                                 capture_output=True, text=True)
 
@@ -229,6 +232,11 @@ class BluettiMonitorService:
 
                 consumed = capacityAh * (100 - self.bluetti.soc) / 100
                 self._dbusservice["/ConsumedAmphours"] = consumed
+                if consumed > 0:
+                    self._dbusservice["/History/LastDischarge"] = consumed
+                    deepest_discharge = VeDbusItemImport(dbus_conn, self.device, '/History/DeepestDischarge')
+                    if deepest_discharge.get_value() < consumed:
+                        self._dbusservice["/History/DeepestDischarge"] = consumed
 
 
                 logging.debug("* * * BATTERY SOC %s", self.bluetti.soc)
@@ -361,12 +369,6 @@ def main():
             "/History/MaximumVoltage": {"initial": 0}, 
             "/History/TimeSinceLastFullCharge": {"initial": 0}, 
             "/History/AutomaticSyncs": {"initial": 0}, 
-            "/History/LowVoltageAlarms": {"initial": 0}, 
-            "/History/HighVoltageAlarms": {"initial": 0}, 
-            "/History/LowStarterVoltageAlarms": {"initial": 0}, 
-            "/History/HighStarterVoltageAlarms": {"initial": 0}, 
-            "/History/MinimumStarterVoltage": {"initial": 0}, 
-            "/History/MaximumStarterVoltage": {"initial": 0}, 
             "/History/DischargedEnergy": {"initial": 0}, 
             "/History/ChargedEnergy ": {"initial": 0}
 
