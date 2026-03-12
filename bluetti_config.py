@@ -36,8 +36,8 @@ class BluettiConfig:
         else:
             return interval
 
-    def get_standby_current(self):
-        return float(self.config.get("Setup", "StandbyCurrent", fallback=3.6)) 
+    def get_standby_power(self):
+        return float(self.config.get("Setup", "StandbyPower", fallback=3.2)) 
 
     def get_fix_quantize_power(self):
         return float(self.config.get("Setup", "FixQuantizePower", fallback=5)) 

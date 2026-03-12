@@ -129,7 +129,7 @@ class BluettiMonitorService:
                 in_power_dc = None
                 in_power_ac = None 
                 in_voltage_dc = None
-                standby_power = self.config.get_standby_current() # round standy consumpiton
+                standby_power = self.config.get_standby_power() # round standy consumpiton
                 lines = output.stdout.splitlines()    
                 power = 0
 
