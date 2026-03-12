@@ -143,7 +143,8 @@ class BluettiMonitorService:
                         if bt_power <= 5:
                             power = bt_power + self.config.get_fix_quantize_power()
                             power = self.add_power_jitter(power)
-                        power = power + standby_power
+                        else:
+                            power = bt_power + standby_power
                         self.bluetti.power = power + (power/100) #add parasite power consumpiton
                     
                     if "FieldName.AC_INPUT_POWER" in line:
