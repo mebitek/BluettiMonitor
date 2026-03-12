@@ -1,4 +1,4 @@
-# venus.Bluetti Monitor v1.0.0
+# venus.Bluetti Monitor v1.0.1
 Service to integrate a bluetti power station  into cerbos gui
 
 The script has been developed with my current RV setup in mind.
@@ -16,6 +16,7 @@ you need to install via pip the `bluetti-bt-lib`
     - `serial`: device serial 
     - `interval`: interval to query the bluetti
     - `standbycurrent`: current auto consumed by bluetti
+    - `FixQuantizePower`: power used as fix for wrong quantization under 5w
     - `batterycapacity`: battery capacity in wh
     - `debug`: set log level to debug
 
