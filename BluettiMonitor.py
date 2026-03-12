@@ -179,21 +179,21 @@ class BluettiMonitorService:
                     self.bluetti.voltage = 13.4
                 elif self.bluetti.soc > 90 and self.bluetti.soc < 99:
                     self.bluetti.voltage = 13.3
-                elif self.bluetti.soc > 70 and self.bluetti.soc < 90:
+                elif self.bluetti.soc > 70 and self.bluetti.soc <= 90:
                     self.bluetti.voltage = 13.2
-                elif self.bluetti.soc > 40 and self.bluetti.soc < 70:
+                elif self.bluetti.soc > 40 and self.bluetti.soc <= 70:
                     self.bluetti.voltage = 13.1
-                elif self.bluetti.soc > 30 and self.bluetti.soc < 40:
+                elif self.bluetti.soc > 30 and self.bluetti.soc <= 40:
                     self.bluetti.voltage = 13.0
-                elif self.bluetti.soc > 20 and self.bluetti.soc < 30:
+                elif self.bluetti.soc > 20 and self.bluetti.soc <= 30:
                     self.bluetti.voltage = 12.9
-                elif self.bluetti.soc > 17 and self.bluetti.soc < 20:
+                elif self.bluetti.soc > 17 and self.bluetti.soc <= 20:
                     self.bluetti.voltage = 12.8
-                elif self.bluetti.soc > 14 and self.bluetti.soc < 17:
+                elif self.bluetti.soc > 14 and self.bluetti.soc <= 17:
                     self.bluetti.voltage = 12.5
-                elif self.bluetti.soc > 9 and self.bluetti.soc < 14:
+                elif self.bluetti.soc > 9 and self.bluetti.soc <= 14:
                     self.bluetti.voltage = 12.0
-                elif self.bluetti.soc > 0 and self.bluetti.soc < 9:
+                elif self.bluetti.soc > 0 and self.bluetti.soc <= 9:
                     self.bluetti.voltage = 10.0
 
                 if self.bluetti.soc < self.config.get_low_soc_alarm_set():
@@ -234,9 +234,9 @@ class BluettiMonitorService:
                 self._dbusservice["/ConsumedAmphours"] = consumed
                 if consumed > 0:
                     self._dbusservice["/History/LastDischarge"] = consumed
-                    # deepest_discharge = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/DeepestDischarge')
-                    # if deepest_discharge.get_value() and deepest_discharge.get_value() < consumed:
-                    #     self._dbusservice["/History/DeepestDischarge"] = consumed
+                    deepest_discharge = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/DeepestDischarge')
+                    if deepest_discharge.get_value() and deepest_discharge.get_value() < consumed:
+                        self._dbusservice["/History/DeepestDischarge"] = consumed
 
 
                 logging.debug("* * * BATTERY SOC %s", self.bluetti.soc)
@@ -370,7 +370,7 @@ def main():
             "/History/TimeSinceLastFullCharge": {"initial": 0}, 
             "/History/AutomaticSyncs": {"initial": 0}, 
             "/History/DischargedEnergy": {"initial": 0}, 
-            "/History/ChargedEnergy ": {"initial": 0}
+            "/History/ChargedEnergy": {"initial": 0}
 
         },
         config=config,
