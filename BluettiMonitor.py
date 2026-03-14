@@ -176,7 +176,7 @@ class BluettiMonitorService:
                 else:
                     logging.debug("Not update skipping")
                     self.bluetti.missing_updates = self.bluetti.missing_updates + 1
-                    continue
+                    return True
 
                 if self.bluetti.soc < 20 and actual_chargin_mode != 'ChargingMode.TURBO':
                     logging.debug("* * * Set turbo mode")
