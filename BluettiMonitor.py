@@ -24,6 +24,7 @@ import subprocess
 from datetime import datetime, timedelta
 import utils
 import random
+from time import sleep
 
 # add the path to our own packages for import
 sys.path.insert(1, "/data/SetupHelper/velib_python")
@@ -47,6 +48,7 @@ class Bluetti:
         self.soc = soc
         self.hist_last_discharge = None
         self.last_update = None
+        self.missing_updates = 0
 
 class BluettiMonitorService:
     def __init__(
@@ -117,6 +119,11 @@ class BluettiMonitorService:
 
         try:
 
+            if self.bluetti.missing_updates > 10:
+                #reset bluettoth
+                self.restart_ble_hardware_and_bluez_driver()
+
+
             if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
                     minutes=self.config.get_interval()):
 
@@ -135,12 +142,14 @@ class BluettiMonitorService:
                 power = 0
 
                 actual_chargin_mode = False
+                updated = False
                 for line in lines:
                     if "FieldName.BATTERY_SOC" in line:
                         soc = int(line.split(":")[1].strip().replace("%", ""))
                         
                         self._dbusservice["/Soc"] = soc
                         self.bluetti.soc = soc
+                        updated = True
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         bt_power = int(line.split(":")[1].strip().replace("W", ""))
@@ -161,7 +170,13 @@ class BluettiMonitorService:
                     if "FieldName.CTRL_CHARGING_MODE" in line:
                         actual_chargin_mode = line.split(":")[1].strip()
 
-
+                if updated:
+                     self.bluetti.last_update = datetime.now()
+                     self.bluetti.missing_updates = 0
+                else:
+                    logging.debug("Not update skipping")
+                    self.bluetti.missing_updates = self.bluetti.missing_updates + 1
+                    continue
 
                 if self.bluetti.soc < 20 and actual_chargin_mode != 'ChargingMode.TURBO':
                     logging.debug("* * * Set turbo mode")
@@ -205,8 +220,6 @@ class BluettiMonitorService:
 
                 capacityAh = self.calculate_capacity(self.bluetti.voltage)
                 self._dbusservice["/Capacity"] = capacityAh
-
-                self.bluetti.last_update = datetime.now()
 
                 self._dbusservice["/Dc/0/Voltage"] = self.bluetti.voltage  
                 # max_voltage = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/History/MaximumVoltage')
@@ -338,6 +351,76 @@ class BluettiMonitorService:
         seconds = int(hours * 3600)
 
         return seconds
+
+    def restart_ble_hardware_and_bluez_driver():
+
+        logging.info("*** Restarting BLE hardware and Bluez driver ***")
+
+        # list bluetooth controllers
+        result = subprocess.run(["hciconfig"], capture_output=True, text=True)
+        logging.info(f"hciconfig exit code: {result.returncode}")
+        logging.info(f"hciconfig output: {result.stdout}")
+
+        # bluetoothctl list
+        result = subprocess.run(["bluetoothctl", "list"], capture_output=True, text=True)
+        logging.info(f"bluetoothctl list exit code: {result.returncode}")
+        logging.info(f"bluetoothctl list output: {result.stdout}")
+
+        # stop will not work, if service/bluetooth driver is stuck
+        result = subprocess.run(["/etc/init.d/bluetooth", "stop"], capture_output=True, text=True)
+        logging.info(f"bluetooth stop exit code: {result.returncode}")
+        logging.info(f"bluetooth stop output: {result.stdout}")
+
+        # process kill is needed, since the service/bluetooth driver is probably freezed
+        result = subprocess.run(["pkill", "-f", "bluetoothd"], capture_output=True, text=True)
+        logging.info(f"pkill exit code: {result.returncode}")
+        logging.info(f"pkill output: {result.stdout}")
+
+        # rfkill block bluetooth
+        result = subprocess.run(["rfkill", "block", "bluetooth"], capture_output=True, text=True)
+        logging.info(f"rfkill block exit code: {result.returncode}")
+        logging.info(f"rfkill block output: {result.stdout}")
+
+        # kill hdciattach
+        result = subprocess.run(["pkill", "-f", "hciattach"], capture_output=True, text=True)
+        logging.info(f"pkill hciattach exit code: {result.returncode}")
+        logging.info(f"pkill hciattach output: {result.stdout}")
+        sleep(0.5)
+
+        # kill hci_uart
+        result = subprocess.run(["rmmod", "hci_uart"], capture_output=True, text=True)
+        logging.info(f"rmmod hci_uart exit code: {result.returncode}")
+        logging.info(f"rmmod hci_uart output: {result.stdout}")
+
+        # kill btbcm
+        result = subprocess.run(["rmmod", "btbcm"], capture_output=True, text=True)
+        logging.info(f"rmmod btbcm exit code: {result.returncode}")
+        logging.info(f"rmmod btbcm output: {result.stdout}")
+
+        # load hci_uart
+        result = subprocess.run(["modprobe", "hci_uart"], capture_output=True, text=True)
+        logging.info(f"modprobe hci_uart exit code: {result.returncode}")
+        logging.info(f"modprobe hci_uart output: {result.stdout}")
+
+        # load btbcm
+        result = subprocess.run(["modprobe", "btbcm"], capture_output=True, text=True)
+        logging.info(f"modprobe btbcm exit code: {result.returncode}")
+        logging.info(f"modprobe btbcm output: {result.stdout}")
+
+        sleep(2)
+
+        result = subprocess.run(["rfkill", "unblock", "bluetooth"], capture_output=True, text=True)
+        logging.info(f"rfkill unblock exit code: {result.returncode}")
+        logging.info(f"rfkill unblock output: {result.stdout}")
+
+        result = subprocess.run(["/etc/init.d/bluetooth", "start"], capture_output=True, text=True)
+        logging.info(f"bluetooth start exit code: {result.returncode}")
+        logging.info(f"bluetooth start output: {result.stdout}")
+
+        logging.info("System Bluetooth daemon should have been restarted")
+        logging.info("Exit driver for clean restart")
+
+        sys.exit(1)
 
 def main():
     config = BluettiConfig()
