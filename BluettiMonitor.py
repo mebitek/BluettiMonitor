@@ -352,7 +352,7 @@ class BluettiMonitorService:
 
         return seconds
 
-    def restart_ble_hardware_and_bluez_driver():
+    def restart_ble_hardware_and_bluez_driver(self):
 
         logging.info("*** Restarting BLE hardware and Bluez driver ***")
 
