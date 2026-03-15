@@ -122,6 +122,7 @@ class BluettiMonitorService:
             if self.bluetti.missing_updates > 10:
                 #reset bluettoth
                 #self.restart_ble_hardware_and_bluez_driver()
+                logging.debug("missing upodates > 10 - need bluetooth restart?")
 
 
             if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
