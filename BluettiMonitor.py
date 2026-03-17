@@ -402,8 +402,8 @@ def main():
             "/ConsumedAmphours": {"initial": 0},
 
             "/Settings/MonitorMode": {"initial": 0},
-            "/Alarms/LowSoc": {"initial": 0}, 
-            "/Alarms/InternalFailure": {"initial: 0"}, 
+            "/Alarms/LowSoc": {"initial": 0},
+            "/Alarms/InternalFailure": {"initial": 0},
 
             "/History/DeepestDischarge": {"initial": None}, 
             "/History/LastDischarge": {"initial": None}, 
