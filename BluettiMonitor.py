@@ -357,71 +357,15 @@ class BluettiMonitorService:
 
         logging.info("*** Restarting BLE hardware and Bluez driver ***")
 
-        # list bluetooth controllers
-        result = subprocess.run(["hciconfig"], capture_output=True, text=True)
-        logging.info(f"hciconfig exit code: {result.returncode}")
-        logging.info(f"hciconfig output: {result.stdout}")
+        result = subprocess.run(["bluetoothctl", "power", "off"], capture_output=True, text=True)
+        logging.info(f"power off exit code: {result.returncode}")
+        logging.info(f"power off output: {result.stdout}")
 
-        # bluetoothctl list
-        result = subprocess.run(["bluetoothctl", "list"], capture_output=True, text=True)
-        logging.info(f"bluetoothctl list exit code: {result.returncode}")
-        logging.info(f"bluetoothctl list output: {result.stdout}")
+        result = subprocess.run(["bluetoothctl", "power", "on"], capture_output=True, text=True)
+        logging.info(f"power on exit code: {result.returncode}")
+        logging.info(f"power on output: {result.stdout}")
 
-        # stop will not work, if service/bluetooth driver is stuck
-        result = subprocess.run(["/etc/init.d/bluetooth", "stop"], capture_output=True, text=True)
-        logging.info(f"bluetooth stop exit code: {result.returncode}")
-        logging.info(f"bluetooth stop output: {result.stdout}")
-
-        # process kill is needed, since the service/bluetooth driver is probably freezed
-        result = subprocess.run(["pkill", "-f", "bluetoothd"], capture_output=True, text=True)
-        logging.info(f"pkill exit code: {result.returncode}")
-        logging.info(f"pkill output: {result.stdout}")
-
-        # rfkill block bluetooth
-        result = subprocess.run(["rfkill", "block", "bluetooth"], capture_output=True, text=True)
-        logging.info(f"rfkill block exit code: {result.returncode}")
-        logging.info(f"rfkill block output: {result.stdout}")
-
-        # kill hdciattach
-        result = subprocess.run(["pkill", "-f", "hciattach"], capture_output=True, text=True)
-        logging.info(f"pkill hciattach exit code: {result.returncode}")
-        logging.info(f"pkill hciattach output: {result.stdout}")
-        sleep(0.5)
-
-        # kill hci_uart
-        result = subprocess.run(["rmmod", "hci_uart"], capture_output=True, text=True)
-        logging.info(f"rmmod hci_uart exit code: {result.returncode}")
-        logging.info(f"rmmod hci_uart output: {result.stdout}")
-
-        # kill btbcm
-        result = subprocess.run(["rmmod", "btbcm"], capture_output=True, text=True)
-        logging.info(f"rmmod btbcm exit code: {result.returncode}")
-        logging.info(f"rmmod btbcm output: {result.stdout}")
-
-        # load hci_uart
-        result = subprocess.run(["modprobe", "hci_uart"], capture_output=True, text=True)
-        logging.info(f"modprobe hci_uart exit code: {result.returncode}")
-        logging.info(f"modprobe hci_uart output: {result.stdout}")
-
-        # load btbcm
-        result = subprocess.run(["modprobe", "btbcm"], capture_output=True, text=True)
-        logging.info(f"modprobe btbcm exit code: {result.returncode}")
-        logging.info(f"modprobe btbcm output: {result.stdout}")
-
-        sleep(2)
-
-        result = subprocess.run(["rfkill", "unblock", "bluetooth"], capture_output=True, text=True)
-        logging.info(f"rfkill unblock exit code: {result.returncode}")
-        logging.info(f"rfkill unblock output: {result.stdout}")
-
-        result = subprocess.run(["/etc/init.d/bluetooth", "start"], capture_output=True, text=True)
-        logging.info(f"bluetooth start exit code: {result.returncode}")
-        logging.info(f"bluetooth start output: {result.stdout}")
-
-        logging.info("System Bluetooth daemon should have been restarted")
-        logging.info("Exit driver for clean restart")
-
-        sys.exit(1)
+        
 
 def main():
     config = BluettiConfig()
