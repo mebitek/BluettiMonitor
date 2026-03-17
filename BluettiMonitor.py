@@ -175,7 +175,7 @@ class BluettiMonitorService:
                 if updated:
                      self.bluetti.last_update = datetime.now()
                      self.bluetti.missing_updates = 0
-                     self._dbusservice["/Alarms/InternalFailure"] = 1
+                     self._dbusservice["/Alarms/InternalFailure"] = 0
                 else:
                     logging.debug("Not update skipping")
                     self.bluetti.missing_updates = self.bluetti.missing_updates + 1
