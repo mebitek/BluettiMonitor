@@ -121,7 +121,8 @@ class BluettiMonitorService:
 
             if self.bluetti.missing_updates > 10:
                 #reset bluettoth
-                #self.restart_ble_hardware_and_bluez_driver()
+                self._dbusservice["/Alarms/InternalFailure"] = 1
+                self.restart_ble_hardware_and_bluez_driver()
                 logging.debug("missing upodates > 10 - need bluetooth restart?")
 
 
@@ -174,6 +175,7 @@ class BluettiMonitorService:
                 if updated:
                      self.bluetti.last_update = datetime.now()
                      self.bluetti.missing_updates = 0
+                     self._dbusservice["/Alarms/InternalFailure"] = 1
                 else:
                     logging.debug("Not update skipping")
                     self.bluetti.missing_updates = self.bluetti.missing_updates + 1
@@ -401,6 +403,7 @@ def main():
 
             "/Settings/MonitorMode": {"initial": 0},
             "/Alarms/LowSoc": {"initial": 0}, 
+            "/Alarms/InternalFailure": {"initial: 0"}, 
 
             "/History/DeepestDischarge": {"initial": None}, 
             "/History/LastDischarge": {"initial": None}, 
