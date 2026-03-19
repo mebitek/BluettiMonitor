@@ -155,7 +155,7 @@ class BluettiMonitorService:
 
                     if "FieldName.DC_OUTPUT_POWER" in line:
                         bt_power = int(line.split(":")[1].strip().replace("W", ""))
-                        if bt_power <= 5:
+                        if bt_power < 5:
                             power = bt_power + self.config.get_fix_quantize_power()
                             power = self.add_power_jitter(power)
                         else:
