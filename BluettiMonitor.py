@@ -373,10 +373,6 @@ def main():
     config = BluettiConfig()
 
 
-    subprocess.run(["opkg", "install" "python3-pip"])
-    subprocess.run(["opkg", "install" "bluetti-bt-lib"]);
-
-
     # set logging level to include info level entries
     level = logging.INFO
     if config.get_debug():

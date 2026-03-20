@@ -17,3 +17,6 @@ standardPromptAndActions='yes'
 #### following line incorporates helper resources into this script
 source "/data/SetupHelper/HelperResources/IncludeHelpers"
 #### end of lines to include helper resources
+
+opkg install python3-pip
+pip3 install bluetti-bt-lib
