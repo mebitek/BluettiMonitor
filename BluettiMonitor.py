@@ -122,7 +122,8 @@ class BluettiMonitorService:
             if self.bluetti.missing_updates > 10:
                 #reset bluettoth
                 self._dbusservice["/Alarms/InternalFailure"] = 1
-                self.restart_ble_hardware_and_bluez_driver()
+                #self.restart_ble_hardware_and_bluez_driver()
+                self.restart_bluetooth_service()
                 logging.debug("missing upodates > 10 - need bluetooth restart?")
 
 
@@ -366,6 +367,31 @@ class BluettiMonitorService:
         result = subprocess.run(["bluetoothctl", "power", "on"], capture_output=True, text=True)
         logging.info(f"power on exit code: {result.returncode}")
         logging.info(f"power on output: {result.stdout}")
+
+
+    def restart_bluetooth_service(self):
+        logging.warning("*** Tentativo riavvio demone Bluetooth ***")
+        try:
+            # 1. Killiamo eventuali processi bluetti rimasti appesi ( zombie )
+            # Questo è importante perché potrebbero trattenere il socket
+            subprocess.run(['pkill', '-f', 'bluetti-read'], timeout=5)
+            
+            # 2. Riavviamo il servizio bluetooth usando systemctl
+            # Venus OS su RPi usa systemd
+            result = subprocess.run(["systemctl", "restart", "bluetooth"], capture_output=True, text=True, timeout=15)
+            
+            if result.returncode == 0:
+                logging.info("Servizio Bluetooth riavviato con successo.")
+                # Diamo un attimo al driver per reinsediarsi
+                time.sleep(3)
+                return True
+            else:
+                logging.error(f"Errore systemctl: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            logging.exception(f"Eccezione durante riavvio bluetooth: {e}")
+            return False
 
         
 
