@@ -119,6 +119,10 @@ class BluettiMonitorService:
 
         try:
 
+            if self.bluetti.missing_updates > 20:
+                self._dbusservice["/Alarms/InternalFailure"] = 2
+                self.reset_usb_bluetooth()
+
             if self.bluetti.missing_updates > 10:
                 #reset bluettoth
                 self._dbusservice["/Alarms/InternalFailure"] = 1
@@ -393,6 +397,73 @@ class BluettiMonitorService:
             logging.exception(f"Eccezione durante riavvio bluetooth: {e}")
             return False
 
+    def reset_usb_bluetooth(self):
+        """
+        Trova il dispositivo Bluetooth e resetta la porta USB ad esso associata.
+        Funziona solo se il Bluetooth è su bus USB (es. Dongle o Pi interno).
+        """
+        logging.warning("*** Tentativo reset fisico USB Bluetooth ***")
+        try:
+            # Trova il path del dispositivo Bluetooth (es. /sys/devices/.../hci0)
+            # Questo comando cerca "hci0" nel filesystem di sistema
+            hci_path = "/sys/class/bluetooth/hci0"
+            
+            if os.path.exists(hci_path):
+                # Risali l'albero delle directory per trovare la porta USB
+                # Il path tipico è /sys/devices/.../usbX/.../hci0
+                
+                # Dobbiamo trovare la directory del "device" padre
+                device_link = os.path.realpath(os.path.join(hci_path, "device"))
+                
+                # Cerca il file 'authorized' per disabilitare/abilitare la porta
+                # Spesso bisogna andare su un livello specifico a seconda del driver
+                # Proviamo a scrivere su 'authorized' nella root del device USB
+                
+                # Logica semplificata: cerchiamo una cartella driver per fare un bind/unbind
+                # Questo è più complesso da fare in modo generico via codice.
+                
+                # Metodo alternativo più semplice: usiamo un tool esterno come 'uhubctl' se installato
+                # oppure facciamo un ciclo di autorizzazione
+                
+                # Hack veloce e sporco: scriviamo 0 e poi 1 nel file authorized del device
+                # Questo spegne e riaccende la periferica a livello hardware
+                
+                # Risaliamo fino a trovare 'authorized'
+                search_path = device_link
+                authorized_path = None
+                
+                # Loop per risalire l'albero (massimo 5 livelli)
+                for _ in range(5):
+                    auth_file = os.path.join(search_path, "authorized")
+                    if os.path.exists(auth_file):
+                        authorized_path = auth_file
+                        break
+                    search_path = os.path.dirname(search_path)
+                    if search_path == "/":
+                        break
+                
+                if authorized_path:
+                    logging.info(f"Trovato controllo autorizzazione: {authorized_path}")
+                    # Disabilita
+                    with open(authorized_path, 'w') as f:
+                        f.write('0')
+                    time.sleep(2)
+                    # Abilita
+                    with open(authorized_path, 'w') as f:
+                        f.write('1')
+                    logging.info("Reset USB fisico eseguito.")
+                    time.sleep(5) # Tempo per reinsediamento
+                    return True
+                else:
+                    logging.error("Impossibile trovare file 'authorized' per reset USB.")
+                    return False
+            else:
+                logging.error("hci0 non trovato, Bluetooth non presente.")
+                return False
+
+        except Exception as e:
+            logging.exception(f"Errore reset USB: {e}")
+            return False
         
 
 def main():
