@@ -382,11 +382,11 @@ class BluettiMonitorService:
             # Questo è importante perché potrebbero trattenere il socket
             subprocess.run(['pkill', 'unblock', 'all'], timeout=5)
 
-            time.sleep(5)
+            sleep(5)
 
             subprocess.run(['hciconfig','hci0', 'reset'], timeout=5)
 
-            time.sleep(5)
+            sleep(5)
             
             # 2. Riavviamo il servizio bluetooth usando systemctl
             # Venus OS su RPi usa systemd
@@ -395,7 +395,7 @@ class BluettiMonitorService:
             if result.returncode == 0:
                 logging.info("Servizio Bluetooth riavviato con successo.")
                 # Diamo un attimo al driver per reinsediarsi
-                time.sleep(3)
+                sleep(3)
                 return True
             else:
                 logging.error(f"Errore systemctl: {result.stderr}")
