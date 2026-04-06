@@ -124,7 +124,7 @@ class BluettiMonitorService:
                 alarm_state = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/Alarms/InternalFailure')
                 if alarm_state.get_value() != 2:
                     self._dbusservice["/Alarms/InternalFailure"] = 2
-                self.reset_usb_bluetooth()
+                self.restart_ble_hardware_and_bluez_driver()
 
             elif self.bluetti.missing_updates > 10:
                 alarm_state = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/Alarms/InternalFailure')
