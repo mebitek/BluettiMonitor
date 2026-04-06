@@ -118,14 +118,19 @@ class BluettiMonitorService:
     def _update(self):
 
         try:
-
+            dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
             if self.bluetti.missing_updates > 20:
-                self._dbusservice["/Alarms/InternalFailure"] = 2
+                
+                alarm_state = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/Alarms/InternalFailure')
+                if alarm_state.get_value() != 2:
+                    self._dbusservice["/Alarms/InternalFailure"] = 2
                 self.reset_usb_bluetooth()
 
-            if self.bluetti.missing_updates > 10:
+            elif self.bluetti.missing_updates > 10:
+                alarm_state = VeDbusItemImport(dbus_conn, "com.victronenergy.battery.bluetti", '/Alarms/InternalFailure')
                 #reset bluettoth
-                self._dbusservice["/Alarms/InternalFailure"] = 1
+                if alarm_state != 1:
+                    self._dbusservice["/Alarms/InternalFailure"] = 1
                 #self.restart_ble_hardware_and_bluez_driver()
                 self.restart_bluetooth_service()
                 logging.debug("missing upodates > 10 - need bluetooth restart?")
@@ -133,9 +138,6 @@ class BluettiMonitorService:
 
             if self.bluetti.last_update is None or datetime.now() > self.bluetti.last_update + timedelta(
                     minutes=self.config.get_interval()):
-
-                dbus_conn = dbus.SessionBus() if 'DBUS_SESSION_BUS_ADDRESS' in os.environ else dbus.SystemBus()
-
 
                 output = subprocess.run(['bluetti-read', '-m', self.bluetti.mac, "-t", self.bluetti.type],
                                 capture_output=True, text=True)
