@@ -384,7 +384,7 @@ class BluettiMonitorService:
 
             time.sleep(5)
 
-            subprocess.run('hciconfig','hci0', 'reset')
+            subprocess.run(['hciconfig','hci0', 'reset'], timeout=5)
 
             time.sleep(5)
             
